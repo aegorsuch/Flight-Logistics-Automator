@@ -4,7 +4,7 @@
  * Updates: Post-flight Uber title set to generic "NEEDS Reserved Uber to  #flightmanaged".
  */
 
-function automateFlightEvents() {
+function FlightLogisticsAutomator() {
   var calendar = CalendarApp.getDefaultCalendar();
   var now = new Date();
   var searchPeriod = new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000));
