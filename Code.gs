@@ -1,6 +1,6 @@
 /**
  * Flight Logistics Automator 
- * Features: Auto-Sync, Weather (Celsius), United Club Routing, and Self-Healing Tasks.
+ * Logic: Parses Gate from Title ("at Gate B12"), Airport from Location ("ORD").
  * Colors: Anchor = TOMATO (Red), Logistics = BASIL (Green).
  */
 
@@ -13,28 +13,32 @@ function automateFlightEvents() {
   
   events.forEach(flight => {
     const fullTitle = flight.getTitle();
-    const cleanTitle = fullTitle.replace('#flightanchor', '').trim();
+    // Extracts "ORD to DEN" part
+    const cleanTitle = fullTitle.split(" at ")[0].replace('#flightanchor', '').trim();
     const startTime = flight.getStartTime();
     const endTime = flight.getEndTime();
     const description = flight.getDescription() || "";
-    const location = flight.getLocation() || ""; 
+    const airportCode = flight.getLocation() ? flight.getLocation().toUpperCase().trim() : ""; 
 
-    // 1. DATA AUDIT LOGIC (Self-Healing)
-    let needsUpdate = false;
-    const airportCode = cleanTitle.substring(0, 3).toUpperCase();
-    const dest = cleanTitle.split(" to ")[1]?.substring(0, 3).toUpperCase();
+    // 1. GATE EXTRACTION FROM TITLE
+    // Looks for "at Gate XXX" in the title
+    let gateStr = "";
+    if (fullTitle.toLowerCase().includes("at gate")) {
+      const parts = fullTitle.split(/at gate/i);
+      gateStr = parts[1].replace('#flightanchor', '').trim();
+    }
+    const gateInfo = gateStr ? ` Gate ${gateStr.toUpperCase()}` : "";
 
     // 2. UNITED CLUB DIRECTORY
     let clubLocation = "United Club"; 
+    let needsUpdate = false;
     const supportedClubHubs = ["ORD", "DEN"];
     
-    if (!supportedClubHubs.includes(airportCode)) {
-      needsUpdate = true;
-    }
+    if (!supportedClubHubs.includes(airportCode)) { needsUpdate = true; }
 
-    if (location) {
-      const gateNum = parseInt(location.replace(/\D/g, "")); 
-      const gateLetter = location.charAt(0).toUpperCase();
+    if (gateStr) {
+      const gateNum = parseInt(gateStr.replace(/\D/g, "")); 
+      const gateLetter = gateStr.charAt(0).toUpperCase();
 
       if (airportCode === "ORD") {
         if (gateLetter === "B") {
@@ -48,16 +52,13 @@ function automateFlightEvents() {
     }
 
     // 3. AUTO-SYNC & CLEANUP
-    const gateInfo = location ? ` Gate ${location.toUpperCase()}` : "";
     if (description.includes("#flightmanaged")) {
       const existingSubEvents = calendar.getEvents(new Date(startTime.getTime() - (24 * 60 * 60000)), new Date(endTime.getTime() + (24 * 60 * 60000)), {search: cleanTitle + " #flightmanaged"});
       const expectedBoardingTime = new Date(startTime.getTime() - (60 * 60000));
       
       const needsSync = existingSubEvents.some(e => 
-        (e.getTitle().includes("Board") && e.getStartTime().getTime() !== expectedBoardingTime.getTime()) ||
-        (location !== "" && !e.getTitle().includes(gateInfo)) ||
-        (clubLocation !== "United Club" && !e.getTitle().includes(clubLocation)) ||
-        (e.getColor() !== CalendarApp.EventColor.BASIL)
+        (e.getStartTime().getTime() !== expectedBoardingTime.getTime()) ||
+        (gateStr !== "" && !e.getTitle().includes(gateInfo))
       );
 
       if (needsSync) {
@@ -70,13 +71,14 @@ function automateFlightEvents() {
               Tasks.Tasks.remove(defaultListId, t.id);
             }
           });
-        } catch (e) { console.log("Task cleanup error"); }
+        } catch (e) { console.log("Task removal error"); }
         flight.setDescription(description.replace("#flightmanaged", "").trim());
       } else { return; }
     }
 
-    // 4. WEATHER & MILITARY GEO-DIRECTORY
+    // 4. WEATHER & MILITARY GEO
     let weatherNote = "";
+    const dest = cleanTitle.split(" to ")[1]?.substring(0, 3).toUpperCase();
     const geo = { 
       "DAY": {lat: 39.9, lon: -84.2}, "ORD": {lat: 41.9, lon: -87.9}, 
       "DEN": {lat: 39.8, lon: -104.6}, "DCA": {lat: 38.8, lon: -77.0},
@@ -98,9 +100,9 @@ function automateFlightEvents() {
           weatherNote = ` (${dest}: ${temp}°C, ${data.daily.weather_code[idx] > 50 ? "Rain" : "Clear"})`;
         }
       }
-    } catch (e) { console.log("Weather error"); }
+    } catch (e) {}
 
-    // 5. CREATE CALENDAR ITINERARY
+    // 5. CREATE ITINERARY
     const timeline = [
       { mins: 60,  name: `Board ${cleanTitle} at${gateInfo} ` },
       { mins: 75,  name: `Walk to Gate${gateInfo} ` },                 
@@ -119,22 +121,16 @@ function automateFlightEvents() {
     const postFlightUber = calendar.createEvent("Reserved Uber to #flightmanaged", endTime, new Date(endTime.getTime() + (30 * 60000)));
     postFlightUber.setColor(CalendarApp.EventColor.BASIL);
 
-    // 6. CREATE TASKS & SELF-HEALING
+    // 6. CREATE TASKS
     const due = new Date(startTime.getTime() - (24 * 60 * 60 * 1000)).toISOString();
     try {
       Tasks.Tasks.insert({title: `Check in for ${cleanTitle} #flightmanaged`, due: due}, "@default");
       Tasks.Tasks.insert({title: `Pack for ${cleanTitle}${weatherNote} #flightmanaged`, due: due}, "@default");
-      
       if (needsUpdate) {
-        Tasks.Tasks.insert({
-          title: `🛠️ UPDATE SCRIPT: Add ${airportCode}/${dest} #flightmanaged`, 
-          notes: `Missing Geo/Club data. Update Code.gs objects.`,
-          due: due
-        }, "@default");
+        Tasks.Tasks.insert({title: `🛠️ UPDATE SCRIPT: Add ${airportCode}/${dest} #flightmanaged`, notes: `Update geo/club objects in Code.gs`, due: due}, "@default");
       }
-    } catch (e) { console.log("Task error"); }
+    } catch (e) {}
 
-    // MARK ANCHOR AS MANAGED & SET TO RED
     if (!flight.getDescription().includes("#flightmanaged")) {
       flight.setDescription(flight.getDescription() + "\n\n#flightmanaged");
     }
