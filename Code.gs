@@ -1,7 +1,6 @@
 /**
  * Flight Logistics Automator 
- * Logic: Parses Gate from Title ("at Gate B12"), Airport from Location ("ORD").
- * Colors: Anchor = TOMATO (Red), Logistics = BASIL (Green).
+ * Fixed: Color ID Implementation
  */
 
 function automateFlightEvents() {
@@ -13,15 +12,12 @@ function automateFlightEvents() {
   
   events.forEach(flight => {
     const fullTitle = flight.getTitle();
-    // Extracts "ORD to DEN" part
     const cleanTitle = fullTitle.split(" at ")[0].replace('#flightanchor', '').trim();
     const startTime = flight.getStartTime();
     const endTime = flight.getEndTime();
     const description = flight.getDescription() || "";
     const airportCode = flight.getLocation() ? flight.getLocation().toUpperCase().trim() : ""; 
 
-    // 1. GATE EXTRACTION FROM TITLE
-    // Looks for "at Gate XXX" in the title
     let gateStr = "";
     if (fullTitle.toLowerCase().includes("at gate")) {
       const parts = fullTitle.split(/at gate/i);
@@ -29,7 +25,6 @@ function automateFlightEvents() {
     }
     const gateInfo = gateStr ? ` Gate ${gateStr.toUpperCase()}` : "";
 
-    // 2. UNITED CLUB DIRECTORY
     let clubLocation = "United Club"; 
     let needsUpdate = false;
     const supportedClubHubs = ["ORD", "DEN"];
@@ -51,7 +46,6 @@ function automateFlightEvents() {
       }
     }
 
-    // 3. AUTO-SYNC & CLEANUP
     if (description.includes("#flightmanaged")) {
       const existingSubEvents = calendar.getEvents(new Date(startTime.getTime() - (24 * 60 * 60000)), new Date(endTime.getTime() + (24 * 60 * 60000)), {search: cleanTitle + " #flightmanaged"});
       const expectedBoardingTime = new Date(startTime.getTime() - (60 * 60000));
@@ -76,7 +70,6 @@ function automateFlightEvents() {
       } else { return; }
     }
 
-    // 4. WEATHER & MILITARY GEO
     let weatherNote = "";
     const dest = cleanTitle.split(" to ")[1]?.substring(0, 3).toUpperCase();
     const geo = { 
@@ -94,46 +87,4 @@ function automateFlightEvents() {
         const res = UrlFetchApp.fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coord.lat}&longitude=${coord.lon}&daily=weather_code,temperature_2m_max&timezone=auto&forecast_days=14`);
         const data = JSON.parse(res.getContentText());
         const arrivalDate = endTime.toISOString().split('T')[0];
-        const idx = data.daily.time.indexOf(arrivalDate);
-        if (idx !== -1) {
-          const temp = Math.round(data.daily.temperature_2m_max[idx]);
-          weatherNote = ` (${dest}: ${temp}°C, ${data.daily.weather_code[idx] > 50 ? "Rain" : "Clear"})`;
-        }
-      }
-    } catch (e) {}
-
-    // 5. CREATE ITINERARY
-    const timeline = [
-      { mins: 60,  name: `Board ${cleanTitle} at${gateInfo} ` },
-      { mins: 75,  name: `Walk to Gate${gateInfo} ` },                 
-      { mins: 90,  name: `${clubLocation} at ` }, 
-      { mins: 105, name: `Walk to ${clubLocation} at ` }, 
-      { mins: 120, name: `Security at ${airportCode} ` },    
-      { mins: 150, name: `Reserved Uber to ${airportCode} ` } 
-    ];
-
-    timeline.forEach(item => {
-      const eventTime = new Date(startTime.getTime() - (item.mins * 60000));
-      const newEvent = calendar.createEvent(item.name + "#flightmanaged", eventTime, new Date(eventTime.getTime() + (15 * 60000)));
-      newEvent.setColor(CalendarApp.EventColor.BASIL);
-    });
-
-    const postFlightUber = calendar.createEvent("Reserved Uber to #flightmanaged", endTime, new Date(endTime.getTime() + (30 * 60000)));
-    postFlightUber.setColor(CalendarApp.EventColor.BASIL);
-
-    // 6. CREATE TASKS
-    const due = new Date(startTime.getTime() - (24 * 60 * 60 * 1000)).toISOString();
-    try {
-      Tasks.Tasks.insert({title: `Check in for ${cleanTitle} #flightmanaged`, due: due}, "@default");
-      Tasks.Tasks.insert({title: `Pack for ${cleanTitle}${weatherNote} #flightmanaged`, due: due}, "@default");
-      if (needsUpdate) {
-        Tasks.Tasks.insert({title: `🛠️ UPDATE SCRIPT: Add ${airportCode}/${dest} #flightmanaged`, notes: `Update geo/club objects in Code.gs`, due: due}, "@default");
-      }
-    } catch (e) {}
-
-    if (!flight.getDescription().includes("#flightmanaged")) {
-      flight.setDescription(flight.getDescription() + "\n\n#flightmanaged");
-    }
-    flight.setColor(CalendarApp.EventColor.TOMATO);
-  });
-}
+        const idx =
