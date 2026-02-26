@@ -1,6 +1,6 @@
 /**
  * Flight Logistics Automator 
- * Fixed: Boarding duration (1hr), Uber duration (30m), Short Airport Codes.
+ * Final Fix: Brute-force Color IDs (11 = Red, 6 = Green).
  */
 
 function automateFlightEvents() {
@@ -17,7 +17,6 @@ function automateFlightEvents() {
     const endTime = flight.getEndTime();
     const description = flight.getDescription() || "";
     
-    // FIX: Extract only the 3-letter code to prevent full address bleed-in
     const rawLoc = flight.getLocation() || "";
     const airportCode = rawLoc.substring(0, 3).toUpperCase().trim(); 
 
@@ -45,14 +44,13 @@ function automateFlightEvents() {
       clubLocation = (gateLetter === "B") ? "United Club near B44" : "United Club near A26";
     }
 
-    // SYNC LOGIC: Wipe existing managed events to prevent duplicates
+    // SYNC LOGIC
     if (description.includes("#flightmanaged")) {
       const existingSubEvents = calendar.getEvents(new Date(startTime.getTime() - (5 * 60 * 60000)), new Date(endTime.getTime() + (5 * 60 * 60000)), {search: "#flightmanaged"});
       existingSubEvents.forEach(e => e.deleteEvent());
     }
 
     // TIMELINE CONFIGURATION
-    // Boarding (mins: 60) now has a duration (dur: 60)
     const timeline = [
       { mins: 60,  dur: 60, name: `Board ${cleanTitle} at${gateInfo} ` }, 
       { mins: 75,  dur: 15, name: `Walk to Gate${gateInfo} ` },                 
@@ -66,25 +64,29 @@ function automateFlightEvents() {
       const eventTime = new Date(startTime.getTime() - (item.mins * 60000));
       const endEventTime = new Date(eventTime.getTime() + (item.dur * 60000));
       const newEvent = calendar.createEvent(item.name + "#flightmanaged", eventTime, endEventTime);
-      newEvent.setColor("6"); 
+      
+      // FORCING GREEN (BASIL)
+      newEvent.setColor(CalendarApp.EventColor.BASIL); 
     });
 
-    // Post-Flight Uber
     const postFlightUber = calendar.createEvent(`Reserved Uber to #flightmanaged`, endTime, new Date(endTime.getTime() + (30 * 60000)));
-    postFlightUber.setColor("6"); 
+    postFlightUber.setColor(CalendarApp.EventColor.BASIL);
 
     // TASKS
-    const due = new Date(startTime.getTime() - (24 * 60 * 60 * 1000)).toISOString();
+    const taskDueTime = new Date(startTime.getTime() - (24 * 60 * 60 * 1000)).toISOString();
     try {
-      Tasks.Tasks.insert({title: `Check in for ${cleanTitle} #flightmanaged`, due: due}, "@default");
+      Tasks.Tasks.insert({title: `Check in for ${cleanTitle} #flightmanaged`, due: taskDueTime}, "@default");
+      Tasks.Tasks.insert({title: `Pack for ${cleanTitle} #flightmanaged`, due: taskDueTime}, "@default");
       if (needsUpdate) {
-        Tasks.Tasks.insert({title: `🛠️ UPDATE SCRIPT: Add ${airportCode} #flightmanaged`, due: due}, "@default");
+        Tasks.Tasks.insert({title: `🛠️ UPDATE SCRIPT: Add ${airportCode} #flightmanaged`, due: taskDueTime}, "@default");
       }
     } catch (e) {}
 
     if (!flight.getDescription().includes("#flightmanaged")) {
       flight.setDescription(flight.getDescription() + "\n\n#flightmanaged");
     }
-    flight.setColor("11"); 
+    
+    // FORCING RED (TOMATO)
+    flight.setColor(CalendarApp.EventColor.TOMATO); 
   });
 }
