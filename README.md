@@ -1,45 +1,38 @@
-# ✈️ Calendar and Task Flight Automations
+# ✈️ Flight Logistics Automator
 
-A Google Apps Script (GAS) utility that transforms a single `#flight` calendar entry into a comprehensive, color-coded travel itinerary. It automatically generates logistical sub-events and synchronized Google Tasks for a seamless travel experience on your phone and **Galaxy Watch Ultra**.
-
----
-
-## 🚀 How It Works
-When you add a flight to your calendar with the `#flight` tag (e.g., `1700-1900 DEN to ORD #flight`), this script triggers to build your entire "travel path" backward from your departure time.
-
-### **1. Automated Itinerary (Calendar)**
-The script creates a sequence of 15-minute logistical blocks leading up to your flight:
-* **NEEDS Reserved Uber:** 150 mins before departure.
-* **Security at [Airport]:** 120 mins before departure.
-* **Walk to United Club:** 105 mins before departure.
-* **United Club:** 90 mins before departure.
-* **Walk to Gate:** 75 mins before departure.
-* **Boarding:** 60 mins before departure.
-
-### **2. Pre-Flight Reminders (Google Tasks)**
-Exactly **24 hours** before your flight, the script injects two tasks into your default Google Tasks list:
-* ✅ **Check in for [Flight]** (includes departure time in notes).
-* 📦 **Pack for [Flight]**
-
-### **3. Visual Organization**
-All generated events and the original flight are color-coded **Basil (Green)**. This creates a distinct "Green Trail" on your Wear OS watch face, separating travel logistics from your standard work meetings.
+A Google Apps Script utility that turns a single `#flightanchor` event into a full itinerary with intelligent routing and high-contrast color coding.
 
 ---
 
-## 🛠️ Setup Instructions
+## 🚀 The Hashtag System
+1.  **`#flightanchor`**: Add to your flight (e.g., `ORD to DAY #flightanchor`).
+2.  **`#flightmanaged`**: Appended to all sub-events/tasks for tracking.
 
-### **Step 1: Create the Script**
-1. Go to [script.google.com](https://script.google.com).
-2. Click **New Project** and rename it to `Calendar and Task Flight Automations`.
-3. Delete any existing code and paste the contents of `Code.gs` from this repository.
+---
 
-### **Step 2: Enable Services**
-1. In the left sidebar, click the **+** next to **Services**.
-2. Find **Google Tasks API** in the list and click **Add**.
+## 🛠️ Features
 
-### **Step 3: Set the Automation Trigger**
-1. Click the **Triggers** icon (the clock ⏰) on the left sidebar.
-2. Click **+ Add Trigger** in the bottom right.
-   * **Function to run:** `automateFlightEvents`
-   * **Event source:** `Time-driven`
-   * **Type
+### **1. Visual Traffic-Light System**
+* 🔴 **Tomato (Red):** The anchor flight you cannot miss.
+* 🟢 **Basil (Green):** All logistics (Uber, Security, Club, Boarding).
+
+### **2. Smart Club Routing**
+Enter your **Gate** (e.g., `B18`) in the flight's **Location** field. The script:
+* Updates all walking/boarding titles with the gate.
+* Finds the nearest United Club (ORD/DEN) and names it: `Walk to United Club near B18`.
+
+### **3. Weather & Military Support**
+Fetches 14-day forecasts (Celsius) for major hubs and military airports (DAY, VPS, ADW, etc.).
+
+### **4. Self-Healing Tasks**
+If data for an airport is missing, the script creates a task: `🛠️ UPDATE SCRIPT: Add JFK/LHR`.
+
+---
+
+## ⚙️ Setup Instructions
+1.  **Copy Script:** Paste `Code.gs` into [script.google.com](https://script.google.com).
+2.  **Enable API:** Add the **Google Tasks API** service.
+3.  **Set Trigger:** Set `automateFlightEvents` to run on a **Minutes timer (Every 30 minutes)**.
+
+## ⚖️ License
+Distributed under the **MIT License**.
