@@ -1,28 +1,28 @@
 # ✈️ Flight Logistics Automator
 
-Transforms a `#flightanchor` event into a full itinerary with high-contrast color coding.
+**Flight Logistics Automator** transforms `#flightanchor` events into a full travel itinerary. By parsing the airport from the **Location** and the gate from the **Title**, it generates color-coded logistics—Uber, security, and gate-specific United Club routing—complete with weather-aware packing tasks in Celsius.
+
+[Image of Google Calendar showing a red flight event and a timeline of green logistical events including travel and airport tasks]
 
 ---
 
-## 🚀 The Entry System
-To trigger the script, create a calendar event with this specific format:
-* **Title:** `ORD to DEN at Gate B12 #flightanchor`
-* **Location:** `ORD`
+## 🚀 Usage
 
-The script appends `#flightmanaged` to all logistics content for tracking.
+To trigger the automation, create a calendar event with this specific format:
+
+* **Title:** `ORD to DEN at Gate B12 #flightanchor`
+* **Location:** `ORD` (Always use the departing airport code here)
+
+The script will automatically append `#flightmanaged` to all generated events and tasks to handle synchronization and prevent duplicates.
 
 ---
 
 ## 🛠️ Features
-* 🔴 **Red Anchor:** Original flight is set to Tomato color.
-* 🟢 **Green Logistics:** Uber, Security, Club, and Boarding set to Basil color.
-* **Smart Routing:** Finds United Club near your specified gate (ORD/DEN).
-* **Weather Integration:** Packing tasks include destination temp in Celsius.
-* **Self-Healing:** Alerts you via Google Tasks if new airport data is required.
 
----
-
-## ⚙️ Setup
-1. Copy `Code.gs` to [script.google.com](https://script.google.com).
-2. Enable **Google Tasks API** under Services.
-3. Set a **30-minute timer** trigger for `automateFlightEvents`.
+* **Visual Traffic-Light System:**
+    * 🔴 **Tomato (Color ID 11):** Your original anchor flight.
+    * 🟢 **Basil (Color ID 6):** All generated logistics (Uber, Security, Club, Boarding).
+* **Smart Club Routing:** Automatically finds the nearest United Club based on your gate (supported at ORD and DEN).
+* **Weather Integration:** Injects destination temperature (Celsius) and conditions into your "Pack" task.
+* **Self-Healing Database:** Generates a Google Task (`🛠️ UPDATE SCRIPT`) if you fly to an airport not in the script's database.
+* **30-
