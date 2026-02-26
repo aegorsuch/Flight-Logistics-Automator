@@ -1,7 +1,7 @@
 /**
  * Flight Logistics Automator 
- * Status: Calendar (Update/Sync) + Tasks (Add-Only).
- * Features: 2.5hr Uber, 1hr Boarding, Full Address Sync, 24h Precise Tasks.
+ * Status: Final stable version.
+ * Updates: Post-flight Uber title set to generic "NEEDS Reserved Uber to  #flightmanaged".
  */
 
 function automateFlightEvents() {
@@ -30,7 +30,10 @@ function automateFlightEvents() {
     var startTime = flight.getStartTime();
     var endTime = flight.getEndTime();
     var fullAddress = flight.getLocation() || "";
+    
+    // Parse Airport Codes
     var airportCode = cleanTitle.substring(0, 3).toUpperCase();
+    var destCode = cleanTitle.split(" to ")[1] ? cleanTitle.split(" to ")[1].substring(0,3).toUpperCase() : "";
 
     var gateID = "";
     if (fullTitle.toLowerCase().indexOf("at gate") !== -1) {
@@ -52,7 +55,6 @@ function automateFlightEvents() {
       clubLocation = (denGateLetter === "B") ? "United Club near B44" : "United Club near A26";
     }
 
-    // Standard cleanup for the calendar events for this specific flight
     var syncStart = new Date(startTime.getTime() - (6 * 60 * 60000));
     var syncEnd = new Date(endTime.getTime() + (2 * 60 * 60000));
     var currentManaged = calendar.getEvents(syncStart, syncEnd, {search: "#flightmanaged"});
@@ -65,7 +67,7 @@ function automateFlightEvents() {
       { mins: 90,  dur: 15, name: clubLocation }, 
       { mins: 105, dur: 15, name: "Walk to " + clubLocation }, 
       { mins: 120, dur: 15, name: "Security at " + airportCode },    
-      { mins: 150, dur: 30, name: "Reserved Uber to " + airportCode } 
+      { mins: 150, dur: 30, name: "NEEDS Reserved Uber to " + airportCode } 
     ];
 
     timeline.forEach(function(item) {
@@ -75,23 +77,19 @@ function automateFlightEvents() {
       if (fullAddress) { newEvent.setLocation(fullAddress); }
     });
 
-    var postFlightUber = calendar.createEvent("Reserved Uber to #flightmanaged", endTime, new Date(endTime.getTime() + (30 * 60000)));
+    // Destination Uber (Set to generic title per request)
+    var postFlightUber = calendar.createEvent("NEEDS Reserved Uber to  #flightmanaged", endTime, new Date(endTime.getTime() + (30 * 60000)));
+    if (destCode) { postFlightUber.setLocation(destCode); }
 
     // --- PART 3: TASK GENERATION (ADD-ONLY) ---
-    // This only creates tasks if the flight doesn't have the #flightmanaged tag in its description yet.
     if (flight.getDescription().indexOf("#flightmanaged") === -1) {
       var taskDate = new Date(startTime.getTime() - (24 * 60 * 60 * 1000));
       var taskDueTime = taskDate.toISOString(); 
-      
       try {
         Tasks.Tasks.insert({title: "Check in for " + cleanTitle + " #flightmanaged", due: taskDueTime}, "@default");
         Tasks.Tasks.insert({title: "Pack for " + cleanTitle + " #flightmanaged", due: taskDueTime}, "@default");
-        
-        // Mark the anchor so we don't create duplicate tasks next time
         flight.setDescription(flight.getDescription() + "\n\n#flightmanaged");
-      } catch (e) {
-        Logger.log("Task creation failed: " + e.message);
-      }
+      } catch (e) {}
     }
   });
 }
