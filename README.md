@@ -2,8 +2,6 @@
 
 This script transforms a single Google Calendar flight entry into a full, minute-by-minute travel itinerary. It handles airport club locations, security timing, Uber reservations, and check-in tasks automatically.
 
-[Image of a flowchart showing a calendar event being expanded into multiple travel logistics events]
-
 ## 🛠️ Setup
 1. **The Anchor:** Create a calendar event for your flight. 
    * **Title:** Must include `#flightanchor` and the gate if known (e.g., `ORD to DEN at Gate B12 #flightanchor`).
