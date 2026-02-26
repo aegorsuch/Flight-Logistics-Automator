@@ -1,28 +1,23 @@
 # ✈️ Flight Logistics Automator
 
-**Flight Logistics Automator** transforms `#flightanchor` events into a full travel itinerary. By parsing the airport from the **Location** and the gate from the **Title**, it generates color-coded logistics—Uber, security, and gate-specific United Club routing—complete with weather-aware packing tasks in Celsius.
+This script transforms a single Google Calendar flight entry into a full, minute-by-minute travel itinerary. It handles airport club locations, security timing, Uber reservations, and check-in tasks automatically.
 
-[Image of Google Calendar showing a red flight event and a timeline of green logistical events including travel and airport tasks]
+[Image of a flowchart showing a calendar event being expanded into multiple travel logistics events]
 
----
-
-## 🚀 Usage
-
-To trigger the automation, create a calendar event with this specific format:
-
-* **Title:** `ORD to DEN at Gate B12 #flightanchor`
-* **Location:** `ORD` (Always use the departing airport code here)
-
-The script will automatically append `#flightmanaged` to all generated events and tasks to handle synchronization and prevent duplicates.
+## 🛠️ Setup
+1. **The Anchor:** Create a calendar event for your flight. 
+   * **Title:** Must include `#flightanchor` and the gate if known (e.g., `ORD to DEN at Gate B12 #flightanchor`).
+   * **Location:** Enter the airport (e.g., `Chicago O'Hare`). Google will auto-complete the full address.
+2. **The Script:** Paste the code into [Google Apps Script](https://script.google.com/).
+3. **Services:** Enable the **Google Tasks API** in the "Services" tab on the left sidebar.
+4. **Trigger:** Set a "Time-driven" trigger to run the function `automateFlightEvents` every 30 minutes.
 
 ---
 
-## 🛠️ Features
+## 📅 The Itinerary Logic (Relative to Departure)
+The script generates `#flightmanaged` events using the following timeline:
 
-* **Visual Traffic-Light System:**
-    * 🔴 **Tomato (Color ID 11):** Your original anchor flight.
-    * 🟢 **Basil (Color ID 6):** All generated logistics (Uber, Security, Club, Boarding).
-* **Smart Club Routing:** Automatically finds the nearest United Club based on your gate (supported at ORD and DEN).
-* **Weather Integration:** Injects destination temperature (Celsius) and conditions into your "Pack" task.
-* **Self-Healing Database:** Generates a Google Task (`🛠️ UPDATE SCRIPT`) if you fly to an airport not in the script's database.
-* **30-
+| Time Before | Duration | Event Title | Location Field |
+| :--- | :--- | :--- | :--- |
+| **-150 mins** | 30 mins | **Reserved Uber to [Airport]** | Full Street Address |
+| **-120 mins** | 15 mins
