@@ -19,5 +19,22 @@ The script generates `#flightmanaged` events using the following timeline:
 
 | Time Before | Duration | Event Title | Location Field |
 | :--- | :--- | :--- | :--- |
-| **-150 mins** | 30 mins | **Reserved Uber to [Airport]** | Full Street Address |
-| **-120 mins** | 15 mins
+| **-150 mins** | 30 mins | **NEEDS Reserved Uber to [Airport Code]** | Full Street Address |
+| **-120 mins** | 15 mins | **Security at [Airport Code]** | Full Street Address |
+| **-105 mins** | 15 mins | **Walk to United Club** | Full Street Address |
+| **-90 mins** | 15 mins | **United Club [Specific Location]** | Full Street Address |
+| **-75 mins** | 15 mins | **Walk to Gate [ID]** | Full Street Address |
+| **-60 mins** | 60 mins | **Boarding [Flight Title]** | Full Street Address |
+| **Arrival** | 30 mins | **NEEDS Reserved Uber to** | Destination Code |
+
+---
+
+## ✨ Key Features
+
+### 📍 Full Address Sync
+The script captures the high-fidelity address from your `#flightanchor` (e.g., *10000 W O'Hare Ave*) and populates the **Location** field of every logistical event. This ensures one-tap navigation in Google Maps or the Uber app.
+
+### 🥪 Smart Club Routing
+The script automatically identifies the closest **United Club** based on your gate:
+* **ORD:** Logic for B6, B18, or C10.
+* **DEN:** Logic for
