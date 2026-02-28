@@ -1,7 +1,7 @@
 /**
  * Flight Logistics Automator (Quota-Friendly Version)
- * Status: Optimized to prevent "Service invoked too many times" errors.
- * Logic: Updates existing events instead of deleting/recreating every minute.
+ * Status: Uber events removed. 7-day Ground Transport Task added.
+ * Logic: Updates existing events; creates tasks for booking.
  */
 
 function FlightLogisticsAutomator() {
@@ -28,13 +28,12 @@ function FlightLogisticsAutomator() {
       clubName = (gateID.charAt(0) === "B") ? ((gateNum <= 10) ? "United Club near B6" : "United Club near B18") : "United Club near C10";
     }
 
-    // Define the desired timeline
+    // Define the desired timeline (Removed Reserved Uber entries)
     var timeline = [
       { mins: 60,  dur: 60, name: "Board " + cleanTitle }, 
       { mins: 75,  dur: 15, name: "Walk to Gate" },                 
       { mins: 90,  dur: 15, name: clubName }, 
-      { mins: 120, dur: 15, name: "Security at " + airportCode },    
-      { mins: 150, dur: 30, name: "Reserved Uber to " + airportCode } 
+      { mins: 120, dur: 15, name: "Security at " + airportCode }
     ];
 
     // Get current managed events for this window
@@ -42,15 +41,20 @@ function FlightLogisticsAutomator() {
     var syncEnd = new Date(endTime.getTime() + (2 * 60 * 60000));
     var currentManaged = calendar.getEvents(syncStart, syncEnd, {search: "#flightmanaged"});
 
+    // Cleanup: If there are old "Reserved Uber" calendar events, delete them
+    currentManaged.forEach(function(e) {
+      if (e.getTitle().indexOf("Reserved Uber") !== -1) {
+        e.deleteEvent();
+      }
+    });
+
     timeline.forEach(function(item) {
       var desiredStart = new Date(startTime.getTime() - (item.mins * 60000));
       var desiredEnd = new Date(desiredStart.getTime() + (item.dur * 60000));
       
-      // Look for an existing event with this name
       var existing = currentManaged.find(e => e.getTitle().includes(item.name));
 
       if (existing) {
-        // Only update if the time has actually changed (Saves Quota!)
         if (existing.getStartTime().getTime() !== desiredStart.getTime()) {
           existing.setTime(desiredStart, desiredEnd);
         }
@@ -58,27 +62,34 @@ function FlightLogisticsAutomator() {
           existing.setLocation(fullAddress);
         }
       } else {
-        // Create only if missing
         var newEvent = calendar.createEvent(item.name + " #flightmanaged", desiredStart, desiredEnd);
         if (fullAddress) newEvent.setLocation(fullAddress);
       }
     });
 
-    // Handle Destination Uber similarly
-    var destUberName = "Reserved Uber to " + (cleanTitle.split(" to ")[1] || "").substring(0,3).toUpperCase();
-    var existingDestUber = currentManaged.find(e => e.getTitle().includes("Reserved Uber") && e.getStartTime().getTime() >= endTime.getTime());
-    if (!existingDestUber) {
-       calendar.createEvent(destUberName + " #flightmanaged", endTime, new Date(endTime.getTime() + (30 * 60000)));
-    }
-
-    // --- PART 2: TASK GENERATION (Only if not flagged) ---
+    // --- PART 2: TASK GENERATION ---
     if (flight.getDescription().indexOf("#flightmanaged") === -1) {
-      var taskDate = new Date(startTime.getTime() - (24 * 60 * 60 * 1000));
+      var oneDayBefore = new Date(startTime.getTime() - (24 * 60 * 60 * 1000));
+      var sevenDaysBefore = new Date(startTime.getTime() - (7 * 24 * 60 * 60 * 1000));
+      
       try {
-        Tasks.Tasks.insert({title: "Reserve Uber to " + airportCode + " #flightmanaged", due: taskDate.toISOString()}, "@default");
-        Tasks.Tasks.insert({title: "Check in: " + cleanTitle + " #flightmanaged", due: taskDate.toISOString()}, "@default");
+        // Task 1: Book Ground Transport (Uber/Rental) - 7 Days Before
+        Tasks.Tasks.insert({
+          title: "Book Ground Transportation for " + cleanTitle + " #flightmanaged", 
+          due: sevenDaysBefore.toISOString()
+        }, "@default");
+
+        // Task 2: Check in - 24 Hours Before
+        Tasks.Tasks.insert({
+          title: "Check in: " + cleanTitle + " #flightmanaged", 
+          due: oneDayBefore.toISOString()
+        }, "@default");
+
+        // Mark flight as "processed" via the description
         flight.setDescription(flight.getDescription() + "\n\n#flightmanaged");
-      } catch (e) {}
+      } catch (e) {
+        Logger.log("Task creation failed: " + e.message);
+      }
     }
   });
 }
