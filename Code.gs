@@ -108,11 +108,9 @@ function runFlightLogistics_(options) {
         var taskToken = "[A:" + anchorId + "]";
         var parsedGate = parseGateFromTitle_(originalTitle);
         var cleanTitle = originalTitle
-          .replace(/#flightanchor/gi, "")
-          .replace(/^\s*Board\s+/i, "")
-      QUOTA_ALERT_THRESHOLD: 0.9, // Alert when 90% of quota is used
-      ALLOWED_USERS: [Session.getActiveUser().getEmail()] // Restrict script access
-          .trim();
+            .replace(/#flightanchor/gi, "")
+            .replace(/^\s*Board\s+/i, "")
+            .trim();
 
     // Security review: restrict script access
         var startTime = flight.getStartTime();
