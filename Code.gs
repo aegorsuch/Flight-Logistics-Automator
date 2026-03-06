@@ -4,20 +4,56 @@
  * Features: Locking, gate parsing, event upserts, and duplicate-safe task creation.
  */
 
-var CLEANUP_ORPHAN_MANAGED_EVENTS = true;
-var SEARCH_AHEAD_DAYS = 14;
-var CLEANUP_LOOKBACK_DAYS = 2;
+
+var FLIGHT_LOGISTICS_CONFIG = {
+  CLEANUP_ORPHAN_MANAGED_EVENTS: true,
+  SEARCH_AHEAD_DAYS: 14,
+  CLEANUP_LOOKBACK_DAYS: 2,
+  MAX_RETRIES: 3,
+  RETRY_DELAY_MS: 2000,
+  ERROR_EMAIL: Session.getActiveUser().getEmail(),
+  ERROR_TASK_LIST: "@default"
+};
 
 function FlightLogisticsAutomator() {
-  runFlightLogistics_({dryRun: false});
+  runFlightLogistics_({dryRun: false, config: FLIGHT_LOGISTICS_CONFIG});
 }
 
 function DryRunFlightLogistics() {
   runFlightLogistics_({dryRun: true});
 }
 
+function TestFlightLogisticsHarness() {
+  var testAnchors = [
+    {
+      title: "ORD to DEN at Gate B12 #flightanchor",
+      location: "Chicago O'Hare",
+      startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000)
+    },
+    {
+      title: "DEN to SFO at Gate A26 #flightanchor",
+      location: "Denver International",
+      startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000)
+    }
+  ];
+  Logger.log("TEST HARNESS: Simulating anchor events...");
+  testAnchors.forEach(function(anchor) {
+    Logger.log("TEST HARNESS: Processing " + anchor.title);
+    // Simulate processing logic
+    var valid = validateAnchorEvent_(anchor);
+    if (!valid) {
+      Logger.log("TEST HARNESS: Invalid anchor event: " + anchor.title);
+    } else {
+      Logger.log("TEST HARNESS: Valid anchor event: " + anchor.title);
+    }
+  });
+}
+
 function runFlightLogistics_(options) {
   var dryRun = !!(options && options.dryRun);
+  var config = (options && options.config) ? options.config : FLIGHT_LOGISTICS_CONFIG;
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
     Logger.log((dryRun ? "DRY RUN" : "LIVE") + ": another run is in progress; exiting this invocation.");
@@ -305,5 +341,44 @@ function ensureTask_(taskTitleSet, title, dueDate, options) {
     taskTitleSet[title] = true;
   } catch (taskErr) {
     Logger.log("Task sync failed for '" + title + "': " + taskErr.message);
+  }
+}
+
+function validateAnchorEvent_(event) {
+  var title = event.title || "";
+  var location = event.location || "";
+  var gate = event.gate || "";
+  if (!title.match(/#flightanchor/i)) return false;
+  if (!location || location.length < 3) return false;
+  if (!gate || gate.length < 1) return false;
+  return true;
+}
+
+function retryApiCall_(fn, config) {
+  var maxRetries = config.MAX_RETRIES || 3;
+  var delayMs = config.RETRY_DELAY_MS || 2000;
+  for (var i = 0; i < maxRetries; i++) {
+    try {
+      return fn();
+    } catch (err) {
+      if (i === maxRetries - 1) throw err;
+      Utilities.sleep(delayMs);
+    }
+  }
+}
+
+function reportError_(msg, config) {
+  Logger.log("ERROR: " + msg);
+  try {
+    // Send email alert
+    if (config.ERROR_EMAIL) {
+      MailApp.sendEmail(config.ERROR_EMAIL, "Flight Logistics Automator Error", msg);
+    }
+    // Create special error task
+    if (config.ERROR_TASK_LIST) {
+      Tasks.Tasks.insert({title: "[FLA ERROR] " + msg, due: new Date().toISOString()}, config.ERROR_TASK_LIST);
+    }
+  } catch (alertErr) {
+    Logger.log("ERROR: Failed to send alert: " + alertErr.message);
   }
 }

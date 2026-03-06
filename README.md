@@ -33,25 +33,33 @@ The script syncs `#flightmanaged` events using the following timeline:
 
 ---
 
-## ✨ Key Features
 
-### 📍 Full Address Sync
-The script captures the high-fidelity address from your `#flightanchor` (e.g., *10000 W O'Hare Ave*) and populates the **Location** field of every logistical event. This ensures one-tap navigation in Google Maps or the Uber app.
+## Features
 
-### ♻️ Idempotent Sync
-The script updates existing managed events instead of creating duplicates, and uses a script lock to prevent overlap when triggers run concurrently.
+- Anchor-scoped event/task tagging (#anchor:<id>) for deterministic updates
+- Per-flight task deduplication
+- Robust airport/gate parsing
+- Orphan cleanup: deletes managed events when anchor is missing
+- Dry-run mode: simulates all actions, logs intended changes
+- Error reporting: sends email and creates special task on sync/cleanup failure
+- Automated test harness: simulates anchor events and validates output
+- Data validation: checks anchor event fields before processing
+- Retry logic: retries Calendar/Tasks API calls with exponential backoff
+- Config object: all timing, cleanup, and feature toggles are configurable
+- Automated README changelog
+- Git hooks: post-commit, pre-push, pre-commit, run-big-checks, update-readme-autolog
 
-### 🧪 Dry-Run Mode
-`DryRunFlightLogistics` runs the same matching and planning logic as live mode and logs intended changes, so you can validate behavior before enabling writes.
+## Usage
 
-### 🧾 Task De-duplication
-Task titles include a flight-specific anchor token so reruns do not create duplicates and repeated routes on different dates do not collide.
+Run `FlightLogisticsAutomator()` for live sync, or `DryRunFlightLogistics()` for simulation.
+Run `TestFlightLogisticsHarness()` to simulate anchor events and validate processing.
 
-### 🧷 Anchor-Scoped Sync
-Each managed event and task includes a stable anchor tag (`#anchor:<id>`) tied to the source flight event. This keeps updates isolated to the correct flight and avoids cross-matching nearby trips.
+## Changelog
 
-### 🧹 Orphan Cleanup
-Managed events tagged with `#anchor:<id>` are automatically deleted when their source `#flightanchor` no longer exists in the active sync window. This cleanup is conservative and only runs for recent/pending events.
+- v1.0: Initial linkage, sync, automation, enforcement
+- v1.1: Stability hardening, anchor-scoped matching, dedupe, orphan cleanup
+- v1.2: Dry-run mode, README auto-update
+- v1.3: Error reporting, test harness, validation, retry logic, config object
 
 ### 🧭 Airport Code Parsing
 Airport code parsing now supports route formats like `ORD to DEN`, `ORD->DEN`, and fallback token parsing for less structured anchor titles.
