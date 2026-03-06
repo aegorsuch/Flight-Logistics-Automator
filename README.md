@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/aegorsuch/Flight-Logistics-Automator/branch/main/graph/badge.svg)](https://codecov.io/gh/aegorsuch/Flight-Logistics-Automator)
+
 # ✈️ Flight Logistics Automator
 
 This script transforms a single Google Calendar flight entry into a full, minute-by-minute travel itinerary. It handles airport club locations, security timing, Uber reservations, and check-in tasks automatically.
