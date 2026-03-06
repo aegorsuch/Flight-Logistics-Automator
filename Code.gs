@@ -9,13 +9,23 @@ var SEARCH_AHEAD_DAYS = 14;
 var CLEANUP_LOOKBACK_DAYS = 2;
 
 function FlightLogisticsAutomator() {
+  runFlightLogistics_({dryRun: false});
+}
+
+function DryRunFlightLogistics() {
+  runFlightLogistics_({dryRun: true});
+}
+
+function runFlightLogistics_(options) {
+  var dryRun = !!(options && options.dryRun);
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
-    Logger.log("Another run is in progress; exiting this invocation.");
+    Logger.log((dryRun ? "DRY RUN" : "LIVE") + ": another run is in progress; exiting this invocation.");
     return;
   }
 
   try {
+    Logger.log((dryRun ? "DRY RUN" : "LIVE") + ": starting FlightLogisticsAutomator run.");
     var calendar = CalendarApp.getDefaultCalendar();
     var now = new Date();
     var searchPeriod = new Date(now.getTime() + (SEARCH_AHEAD_DAYS * 24 * 60 * 60 * 1000));
@@ -70,7 +80,11 @@ function FlightLogisticsAutomator() {
           if (matched.length > 1) {
             for (var i = 1; i < matched.length; i++) {
               try {
-                matched[i].deleteEvent();
+                if (dryRun) {
+                  Logger.log("DRY RUN: would delete duplicate managed event: " + (matched[i].getTitle() || "(untitled)"));
+                } else {
+                  matched[i].deleteEvent();
+                }
               } catch (duplicateErr) {
                 Logger.log("Failed to remove duplicate event: " + duplicateErr.message);
               }
@@ -78,28 +92,40 @@ function FlightLogisticsAutomator() {
           }
 
           if (eventToKeep) {
-            eventToKeep.setTitle(desiredTitle);
-            eventToKeep.setTime(desiredStart, desiredEnd);
-            if (fullAddress && eventToKeep.getLocation() !== fullAddress) {
-              eventToKeep.setLocation(fullAddress);
+            if (dryRun) {
+              Logger.log("DRY RUN: would update managed event to '" + desiredTitle + "' at " + desiredStart.toISOString());
+            } else {
+              eventToKeep.setTitle(desiredTitle);
+              eventToKeep.setTime(desiredStart, desiredEnd);
+              if (fullAddress && eventToKeep.getLocation() !== fullAddress) {
+                eventToKeep.setLocation(fullAddress);
+              }
             }
           } else {
-            var created = calendar.createEvent(desiredTitle, desiredStart, desiredEnd);
-            if (fullAddress) {
-              created.setLocation(fullAddress);
+            if (dryRun) {
+              Logger.log("DRY RUN: would create managed event '" + desiredTitle + "' at " + desiredStart.toISOString());
+            } else {
+              var created = calendar.createEvent(desiredTitle, desiredStart, desiredEnd);
+              if (fullAddress) {
+                created.setLocation(fullAddress);
+              }
             }
           }
         });
 
         var oneDayBefore = new Date(startTime.getTime() - (24 * 60 * 60 * 1000));
         var sevenDaysBefore = new Date(startTime.getTime() - (7 * 24 * 60 * 60 * 1000));
-        ensureTask_(openTaskTitles, "Book Ground Transportation for " + cleanTitle + " " + taskToken + " #flightmanaged " + anchorTag, sevenDaysBefore);
-        ensureTask_(openTaskTitles, "Check in for " + cleanTitle + " " + taskToken + " #flightmanaged " + anchorTag, oneDayBefore);
-        ensureTask_(openTaskTitles, "Pack for " + cleanTitle + " " + taskToken + " #flightmanaged " + anchorTag, oneDayBefore);
+        ensureTask_(openTaskTitles, "Book Ground Transportation for " + cleanTitle + " " + taskToken + " #flightmanaged " + anchorTag, sevenDaysBefore, options);
+        ensureTask_(openTaskTitles, "Check in for " + cleanTitle + " " + taskToken + " #flightmanaged " + anchorTag, oneDayBefore, options);
+        ensureTask_(openTaskTitles, "Pack for " + cleanTitle + " " + taskToken + " #flightmanaged " + anchorTag, oneDayBefore, options);
 
         var description = flight.getDescription() || "";
         if (description.indexOf("#flightmanaged") === -1) {
-          flight.setDescription((description + "\n\n#flightmanaged").trim());
+          if (dryRun) {
+            Logger.log("DRY RUN: would append #flightmanaged tag to anchor description.");
+          } else {
+            flight.setDescription((description + "\n\n#flightmanaged").trim());
+          }
         }
       } catch (flightErr) {
         Logger.log("Failed to process anchor '" + flight.getTitle() + "': " + flightErr.message);
@@ -107,14 +133,17 @@ function FlightLogisticsAutomator() {
     });
 
     if (CLEANUP_ORPHAN_MANAGED_EVENTS) {
-      cleanupOrphanManagedEvents_(calendar, now, searchPeriod, liveAnchorTags);
+      cleanupOrphanManagedEvents_(calendar, now, searchPeriod, liveAnchorTags, options);
     }
+
+    Logger.log((dryRun ? "DRY RUN" : "LIVE") + ": run completed.");
   } finally {
     lock.releaseLock();
   }
 }
 
-function cleanupOrphanManagedEvents_(calendar, now, searchPeriod, liveAnchorTags) {
+function cleanupOrphanManagedEvents_(calendar, now, searchPeriod, liveAnchorTags, options) {
+  var dryRun = !!(options && options.dryRun);
   var cleanupStart = new Date(now.getTime() - (CLEANUP_LOOKBACK_DAYS * 24 * 60 * 60 * 1000));
   var managedEvents = calendar.getEvents(cleanupStart, searchPeriod, {search: "#flightmanaged"});
   var deletedCount = 0;
@@ -132,7 +161,11 @@ function cleanupOrphanManagedEvents_(calendar, now, searchPeriod, liveAnchorTags
     }
 
     try {
-      event.deleteEvent();
+      if (dryRun) {
+        Logger.log("DRY RUN: would delete orphan managed event: " + title);
+      } else {
+        event.deleteEvent();
+      }
       deletedCount++;
     } catch (cleanupErr) {
       Logger.log("Failed to delete orphan managed event: " + cleanupErr.message);
@@ -257,13 +290,18 @@ function getOpenTaskTitleSet_() {
   return seen;
 }
 
-function ensureTask_(taskTitleSet, title, dueDate) {
+function ensureTask_(taskTitleSet, title, dueDate, options) {
+  var dryRun = !!(options && options.dryRun);
   if (taskTitleSet[title]) {
     return;
   }
 
   try {
-    Tasks.Tasks.insert({title: title, due: dueDate.toISOString()}, "@default");
+    if (dryRun) {
+      Logger.log("DRY RUN: would create task '" + title + "' due " + dueDate.toISOString());
+    } else {
+      Tasks.Tasks.insert({title: title, due: dueDate.toISOString()}, "@default");
+    }
     taskTitleSet[title] = true;
   } catch (taskErr) {
     Logger.log("Task sync failed for '" + title + "': " + taskErr.message);

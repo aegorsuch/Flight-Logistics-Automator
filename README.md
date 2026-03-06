@@ -10,6 +10,14 @@ This script transforms a single Google Calendar flight entry into a full, minute
 3. **Services:** Enable the **Google Tasks API** in the "Services" tab on the left sidebar.
 4. **Trigger:** Set a "Time-driven" trigger to run the function `FlightLogisticsAutomator` every 30 minutes.
 
+### Dry Run (Safe Validation)
+Use `DryRunFlightLogistics` to simulate a full run without writing any changes.
+
+- No Calendar events are created, updated, or deleted.
+- No Google Tasks are created.
+- Anchor descriptions are not modified.
+- Planned actions are written to Apps Script execution logs.
+
 ---
 
 ## 📅 The Itinerary Logic (Relative to Departure)
@@ -32,6 +40,9 @@ The script captures the high-fidelity address from your `#flightanchor` (e.g., *
 
 ### ♻️ Idempotent Sync
 The script updates existing managed events instead of creating duplicates, and uses a script lock to prevent overlap when triggers run concurrently.
+
+### 🧪 Dry-Run Mode
+`DryRunFlightLogistics` runs the same matching and planning logic as live mode and logs intended changes, so you can validate behavior before enabling writes.
 
 ### 🧾 Task De-duplication
 Task titles include a flight-specific anchor token so reruns do not create duplicates and repeated routes on different dates do not collide.
