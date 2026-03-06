@@ -59,18 +59,48 @@ function runFlightLogistics_(options) {
     Logger.log((dryRun ? "DRY RUN" : "LIVE") + ": another run is in progress; exiting this invocation.");
     return;
   }
+      QUOTA_ALERT_THRESHOLD: 0.9 // Alert when 90% of quota is used
 
   try {
     Logger.log((dryRun ? "DRY RUN" : "LIVE") + ": starting FlightLogisticsAutomator run.");
-    var calendar = CalendarApp.getDefaultCalendar();
+      monitorApiQuota_(FLIGHT_LOGISTICS_CONFIG);
     var now = new Date();
     var searchPeriod = new Date(now.getTime() + (SEARCH_AHEAD_DAYS * 24 * 60 * 60 * 1000));
     var flightAnchors = calendar.getEvents(now, searchPeriod, {search: '#flightanchor'});
     var openTaskTitles = getOpenTaskTitleSet_();
-    var liveAnchorTags = {};
+      monitorApiQuota_(FLIGHT_LOGISTICS_CONFIG);
 
     flightAnchors.forEach(function(flight) {
       try {
+    // API quota monitoring
+    function monitorApiQuota_(config) {
+      try {
+        var calendarQuota = getCalendarApiQuota_();
+        var tasksQuota = getTasksApiQuota_();
+        var threshold = config.QUOTA_ALERT_THRESHOLD || 0.9;
+        if (calendarQuota.used / calendarQuota.limit >= threshold) {
+          reportError_("Calendar API quota nearly exhausted: " + calendarQuota.used + "/" + calendarQuota.limit, config);
+        }
+        if (tasksQuota.used / tasksQuota.limit >= threshold) {
+          reportError_("Tasks API quota nearly exhausted: " + tasksQuota.used + "/" + tasksQuota.limit, config);
+        }
+      } catch (quotaErr) {
+        Logger.log("Failed to monitor API quota: " + quotaErr.message);
+      }
+    }
+
+    // Dummy quota fetchers (replace with real API if available)
+    function getCalendarApiQuota_() {
+      // Google Apps Script does not expose quota directly; simulate for demo
+      // Replace with real quota fetch if available
+      return {used: 900, limit: 1000}; // Example: 900/1000 used
+    }
+
+    function getTasksApiQuota_() {
+      // Google Apps Script does not expose quota directly; simulate for demo
+      // Replace with real quota fetch if available
+      return {used: 450, limit: 500}; // Example: 450/500 used
+    }
         var originalTitle = flight.getTitle() || "";
         var anchorId = buildAnchorId_(flight);
         var anchorTag = "#anchor:" + anchorId;
