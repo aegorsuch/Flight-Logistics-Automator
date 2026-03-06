@@ -51,7 +51,7 @@ This repository enforces sync and documentation checks through git hooks:
 2. `post-commit` also runs `.githooks/run-big-checks` in warning mode after every change.
 3. `pre-push` runs `.githooks/run-big-checks` in strict mode and blocks `git push` when checks fail.
 4. `pre-push` blocks `git push` if `clasp push` fails.
-5. `pre-commit` blocks commits when key files change without `README.md` staged.
+5. `pre-commit` auto-updates and stages `README.md` when key files change.
 
 Enable hooks in a local clone with:
 
@@ -66,6 +66,9 @@ Key files checked by `pre-commit`:
 - `.clasp.json`
 - `.githooks/*`
 
+When those files are staged, `.githooks/update-readme-autolog` updates the `Auto Changelog`
+section below and stages `README.md` automatically.
+
 `run-big-checks` currently validates:
 
 - required files are present (`README.md`, `Code.gs`, `appsscript.json`, `.clasp.json`)
@@ -77,3 +80,11 @@ If you intentionally need to bypass hook checks for one commit, use:
 ```bash
 git commit --no-verify
 ```
+
+## Auto Changelog
+
+This section is updated automatically by git hooks when key files change.
+
+<!-- AUTO-CHANGELOG-START -->
+- 2026-03-06 17:52 UTC: auto README sync for staged key changes (`.githooks/pre-commit,.githooks/update-readme-autolog`).
+<!-- AUTO-CHANGELOG-END -->

@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# Auto-update README.md with a small changelog entry for key staged changes.
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -z "$REPO_ROOT" ]; then
+  echo "update-readme-autolog: not inside a git repository."
+  exit 1
+fi
+
+cd "$REPO_ROOT" || exit 1
+
+README_PATH="README.md"
+START_MARKER="<!-- AUTO-CHANGELOG-START -->"
+END_MARKER="<!-- AUTO-CHANGELOG-END -->"
+
+if [ ! -f "$README_PATH" ]; then
+  echo "update-readme-autolog: README.md not found."
+  exit 1
+fi
+
+KEY_FILES="$(git diff --cached --name-only | grep -E '^(Code\.gs|appsscript\.json|\.clasp\.json|\.githooks/.*)$' || true)"
+if [ -z "$KEY_FILES" ]; then
+  exit 0
+fi
+
+STAMP="$(date -u +"%Y-%m-%d %H:%M UTC")"
+FILE_LIST="$(echo "$KEY_FILES" | tr '\n' ',' | sed 's/,$//')"
+ENTRY="- ${STAMP}: auto README sync for staged key changes (\`${FILE_LIST}\`)."
+
+if ! grep -Fq "$START_MARKER" "$README_PATH" || ! grep -Fq "$END_MARKER" "$README_PATH"; then
+  cat <<EOF >> "$README_PATH"
+
+## Auto Changelog
+
+This section is updated automatically by git hooks when key files change.
+
+${START_MARKER}
+${ENTRY}
+${END_MARKER}
+EOF
+else
+  awk \
+    -v start="$START_MARKER" \
+    -v end="$END_MARKER" \
+    -v entry="$ENTRY" \
+    '
+      BEGIN { between = 0; kept = 0 }
+      $0 == start {
+        print
+        print entry
+        between = 1
+        next
+      }
+      $0 == end {
+        between = 0
+        print
+        next
+      }
+      between == 1 {
+        if ($0 ~ /^- / && kept < 11) {
+          print
+          kept++
+        }
+        next
+      }
+      { print }
+    ' "$README_PATH" > "$README_PATH.tmp" || exit 1
+
+  mv "$README_PATH.tmp" "$README_PATH"
+fi
+
+git add "$README_PATH"
+exit 0

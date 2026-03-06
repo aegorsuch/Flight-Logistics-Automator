@@ -14,10 +14,18 @@ echo "$CHANGED" | grep -Eq '^README\.md$'
 TOUCHED_README=$?
 
 if [ "$TOUCHED_KEY_FILES" -eq 0 ] && [ "$TOUCHED_README" -ne 0 ]; then
-  echo "pre-commit: README.md is required when code/config/workflow files change."
-  echo "Stage README.md and commit again."
-  echo "To bypass once: git commit --no-verify"
-  exit 1
+  echo "pre-commit: key files changed; auto-updating README.md..."
+  if [ -f ".githooks/update-readme-autolog" ]; then
+    if ! sh .githooks/update-readme-autolog; then
+      echo "pre-commit: automatic README update failed."
+      echo "Fix README.md manually or bypass once with: git commit --no-verify"
+      exit 1
+    fi
+  else
+    echo "pre-commit: .githooks/update-readme-autolog is missing."
+    echo "Fix README.md manually or bypass once with: git commit --no-verify"
+    exit 1
+  fi
 fi
 
 exit 0
