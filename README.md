@@ -8,22 +8,20 @@ This script transforms a single Google Calendar flight entry into a full, minute
    * **Location:** Enter the airport (e.g., `Chicago O'Hare`). Google will auto-complete the full address.
 2. **The Script:** Paste the code into [Google Apps Script](https://script.google.com/).
 3. **Services:** Enable the **Google Tasks API** in the "Services" tab on the left sidebar.
-4. **Trigger:** Set a "Time-driven" trigger to run the function `automateFlightEvents` every 30 minutes.
+4. **Trigger:** Set a "Time-driven" trigger to run the function `FlightLogisticsAutomator` every 30 minutes.
 
 ---
 
 ## 📅 The Itinerary Logic (Relative to Departure)
-The script generates `#flightmanaged` events using the following timeline:
+The script syncs `#flightmanaged` events using the following timeline:
 
 | Time Before | Duration | Event Title | Location Field |
 | :--- | :--- | :--- | :--- |
-| **-150 mins** | 30 mins | **NEEDS Reserved Uber to [Airport Code]** | Full Street Address |
 | **-120 mins** | 15 mins | **Security at [Airport Code]** | Full Street Address |
-| **-105 mins** | 15 mins | **Walk to United Club** | Full Street Address |
-| **-90 mins** | 15 mins | **United Club [Specific Location]** | Full Street Address |
-| **-75 mins** | 15 mins | **Walk to Gate [ID]** | Full Street Address |
-| **-60 mins** | 60 mins | **Boarding [Flight Title]** | Full Street Address |
-| **Arrival** | 30 mins | **NEEDS Reserved Uber to** | Destination Code |
+| **-105 mins** | 15 mins | **Walk to United Club / near Gate [ID]** | Full Street Address |
+| **-90 mins** | 30 mins | **United Club / near Gate [ID]** | Full Street Address |
+| **-60 mins** | 15 mins | **Walk to Gate [ID]** | Full Street Address |
+| **-45 mins** | 45 mins | **Board [Flight Title] (at Gate [ID] when available)** | Full Street Address |
 
 ---
 
@@ -31,6 +29,12 @@ The script generates `#flightmanaged` events using the following timeline:
 
 ### 📍 Full Address Sync
 The script captures the high-fidelity address from your `#flightanchor` (e.g., *10000 W O'Hare Ave*) and populates the **Location** field of every logistical event. This ensures one-tap navigation in Google Maps or the Uber app.
+
+### ♻️ Idempotent Sync
+The script updates existing managed events instead of creating duplicates, and uses a script lock to prevent overlap when triggers run concurrently.
+
+### 🧾 Task De-duplication
+Task titles are checked before insertion so reruns do not create duplicate Google Tasks entries.
 
 ### 🥪 Smart Club Routing
 The script automatically identifies the closest **United Club** based on your gate:
