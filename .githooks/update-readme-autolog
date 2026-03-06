@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Auto-update README.md with a small changelog entry for key staged changes.
+# Auto-update README.md with a concise changelog entry for key staged changes.
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 if [ -z "$REPO_ROOT" ]; then
   echo "update-readme-autolog: not inside a git repository."
@@ -25,7 +25,7 @@ fi
 
 STAMP="$(date -u +"%Y-%m-%d %H:%M UTC")"
 FILE_LIST="$(echo "$KEY_FILES" | tr '\n' ',' | sed 's/,$//')"
-ENTRY="- ${STAMP}: auto README sync for staged key changes (\`${FILE_LIST}\`)."
+ENTRY="- ${STAMP} | files: \`${FILE_LIST}\` | hook: pre-commit auto-sync"
 
 if ! grep -Fq "$START_MARKER" "$README_PATH" || ! grep -Fq "$END_MARKER" "$README_PATH"; then
   cat <<EOF >> "$README_PATH"
@@ -33,6 +33,7 @@ if ! grep -Fq "$START_MARKER" "$README_PATH" || ! grep -Fq "$END_MARKER" "$READM
 ## Auto Changelog
 
 This section is updated automatically by git hooks when key files change.
+It keeps the 5 most recent entries.
 
 ${START_MARKER}
 ${ENTRY}
@@ -57,7 +58,7 @@ else
         next
       }
       between == 1 {
-        if ($0 ~ /^- / && kept < 11) {
+        if ($0 ~ /^- / && kept < 4) {
           print
           kept++
         }

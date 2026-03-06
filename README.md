@@ -68,6 +68,7 @@ Key files checked by `pre-commit`:
 
 When those files are staged, `.githooks/update-readme-autolog` updates the `Auto Changelog`
 section below and stages `README.md` automatically.
+The changelog keeps the 5 most recent entries.
 
 `run-big-checks` currently validates:
 
@@ -84,7 +85,9 @@ git commit --no-verify
 ## Auto Changelog
 
 This section is updated automatically by git hooks when key files change.
+It keeps the 5 most recent entries.
 
 <!-- AUTO-CHANGELOG-START -->
+- 2026-03-06 17:54 UTC | files: `.githooks/update-readme-autolog` | hook: pre-commit auto-sync
 - 2026-03-06 17:52 UTC: auto README sync for staged key changes (`.githooks/pre-commit,.githooks/update-readme-autolog`).
 <!-- AUTO-CHANGELOG-END -->
