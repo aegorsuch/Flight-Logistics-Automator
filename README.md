@@ -34,12 +34,13 @@ The script captures the high-fidelity address from your `#flightanchor` (e.g., *
 The script updates existing managed events instead of creating duplicates, and uses a script lock to prevent overlap when triggers run concurrently.
 
 ### 🧾 Task De-duplication
-Task titles are checked before insertion so reruns do not create duplicate Google Tasks entries.
+Task titles include a flight-specific anchor token so reruns do not create duplicates and repeated routes on different dates do not collide.
 
-### 🥪 Smart Club Routing
-The script automatically identifies the closest **United Club** based on your gate:
-* **ORD:** Logic for B6, B18, or C10.
-* **DEN:** Logic for
+### 🧷 Anchor-Scoped Sync
+Each managed event and task includes a stable anchor tag (`#anchor:<id>`) tied to the source flight event. This keeps updates isolated to the correct flight and avoids cross-matching nearby trips.
+
+### 🧭 Airport Code Parsing
+Airport code parsing now supports route formats like `ORD to DEN`, `ORD->DEN`, and fallback token parsing for less structured anchor titles.
 
 ---
 

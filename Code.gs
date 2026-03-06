@@ -21,6 +21,9 @@ function FlightLogisticsAutomator() {
     flightAnchors.forEach(function(flight) {
       try {
         var originalTitle = flight.getTitle() || "";
+        var anchorId = buildAnchorId_(flight);
+        var anchorTag = "#anchor:" + anchorId;
+        var taskToken = "[A:" + anchorId + "]";
         var parsedGate = parseGateFromTitle_(originalTitle);
         var cleanTitle = originalTitle
           .replace(/#flightanchor/gi, "")
@@ -31,7 +34,7 @@ function FlightLogisticsAutomator() {
         var startTime = flight.getStartTime();
         var endTime = flight.getEndTime();
         var fullAddress = flight.getLocation() || "";
-        var airportCode = cleanTitle.substring(0, 3).toUpperCase();
+        var airportCode = parseAirportCodeFromTitle_(originalTitle) || "AIR";
 
         var boardTitle = parsedGate ? ("Board " + cleanTitle + " at Gate " + parsedGate) : ("Board " + cleanTitle);
         var walkGateTitle = parsedGate ? ("Walk to Gate " + parsedGate) : "Walk to Gate";
@@ -53,8 +56,8 @@ function FlightLogisticsAutomator() {
         timeline.forEach(function(item) {
           var desiredStart = new Date(startTime.getTime() - (item.mins * 60000));
           var desiredEnd = new Date(desiredStart.getTime() + (item.dur * 60000));
-          var desiredTitle = item.name + " #flightmanaged #" + item.key;
-          var matched = findManagedMatches_(managedEvents, item.key);
+          var desiredTitle = item.name + " #flightmanaged #" + item.key + " " + anchorTag;
+          var matched = findManagedMatches_(managedEvents, item.key, anchorTag, desiredStart);
           var eventToKeep = matched.length ? matched[0] : null;
 
           // Remove duplicates from prior runs so each step has one managed event.
@@ -84,9 +87,9 @@ function FlightLogisticsAutomator() {
 
         var oneDayBefore = new Date(startTime.getTime() - (24 * 60 * 60 * 1000));
         var sevenDaysBefore = new Date(startTime.getTime() - (7 * 24 * 60 * 60 * 1000));
-        ensureTask_(openTaskTitles, "Book Ground Transportation for " + cleanTitle + " #flightmanaged", sevenDaysBefore);
-        ensureTask_(openTaskTitles, "Check in for " + cleanTitle + " #flightmanaged", oneDayBefore);
-        ensureTask_(openTaskTitles, "Pack for " + cleanTitle + " #flightmanaged", oneDayBefore);
+        ensureTask_(openTaskTitles, "Book Ground Transportation for " + cleanTitle + " " + taskToken + " #flightmanaged " + anchorTag, sevenDaysBefore);
+        ensureTask_(openTaskTitles, "Check in for " + cleanTitle + " " + taskToken + " #flightmanaged " + anchorTag, oneDayBefore);
+        ensureTask_(openTaskTitles, "Pack for " + cleanTitle + " " + taskToken + " #flightmanaged " + anchorTag, oneDayBefore);
 
         var description = flight.getDescription() || "";
         if (description.indexOf("#flightmanaged") === -1) {
@@ -106,27 +109,86 @@ function parseGateFromTitle_(title) {
   return match ? match[1].toUpperCase() : "";
 }
 
-function findManagedMatches_(events, key) {
+function parseAirportCodeFromTitle_(title) {
+  var normalized = (title || "")
+    .replace(/#flightanchor/gi, "")
+    .replace(/^\s*Board\s+/i, "")
+    .toUpperCase();
+
+  // Priority 1: route format like "ORD to DEN" or "ORD->DEN".
+  var routeMatch = /\b([A-Z]{3})\s*(?:TO|->|-)\s*([A-Z]{3})\b/.exec(normalized);
+  if (routeMatch) {
+    return routeMatch[1];
+  }
+
+  // Priority 2: title starts with IATA code.
+  var leadingCode = /^\s*([A-Z]{3})\b/.exec(normalized);
+  if (leadingCode) {
+    return leadingCode[1];
+  }
+
+  // Priority 3: first IATA-like token anywhere in title.
+  var tokenMatch = /\b([A-Z]{3})\b/.exec(normalized);
+  return tokenMatch ? tokenMatch[1] : "";
+}
+
+function buildAnchorId_(flight) {
+  var raw = "";
+
+  try {
+    raw = flight.getId();
+  } catch (idErr) {
+    raw = "";
+  }
+
+  if (!raw) {
+    raw = (flight.getTitle() || "") + "|" + flight.getStartTime().toISOString();
+  }
+
+  var anchorId = raw.toString().toLowerCase().replace(/[^a-z0-9]/g, "");
+  return anchorId ? anchorId.substring(0, 20) : "unknownanchor";
+}
+
+function eventMatchesLegacyKey_(title, key) {
+  switch (key) {
+    case "fm-board":
+      return /^Board\s/i.test(title);
+    case "fm-walk-gate":
+      return /^Walk to Gate\b/i.test(title);
+    case "fm-club":
+      return /^United Club\b/i.test(title);
+    case "fm-walk-club":
+      return /^Walk to United Club\b/i.test(title);
+    case "fm-security":
+      return /^Security at\s/i.test(title);
+    default:
+      return false;
+  }
+}
+
+function findManagedMatches_(events, key, anchorTag, desiredStart) {
+  var anchorScoped = events.filter(function(event) {
+    var title = event.getTitle() || "";
+    return title.indexOf(anchorTag) !== -1 && (title.indexOf("#" + key) !== -1 || eventMatchesLegacyKey_(title, key));
+  });
+
+  if (anchorScoped.length) {
+    return anchorScoped;
+  }
+
+  // Migration path for legacy events without anchor tags, kept strict with time matching.
   return events.filter(function(event) {
     var title = event.getTitle() || "";
-    if (title.indexOf("#" + key) !== -1) {
-      return true;
+    if (title.indexOf("#anchor:") !== -1) {
+      return false;
     }
 
-    switch (key) {
-      case "fm-board":
-        return /^Board\s/i.test(title);
-      case "fm-walk-gate":
-        return /^Walk to Gate\b/i.test(title);
-      case "fm-club":
-        return /^United Club\b/i.test(title);
-      case "fm-walk-club":
-        return /^Walk to United Club\b/i.test(title);
-      case "fm-security":
-        return /^Security at\s/i.test(title);
-      default:
-        return false;
+    if (!eventMatchesLegacyKey_(title, key)) {
+      return false;
     }
+
+    var startDeltaMs = Math.abs(event.getStartTime().getTime() - desiredStart.getTime());
+    return startDeltaMs <= 30 * 60000;
   });
 }
 
