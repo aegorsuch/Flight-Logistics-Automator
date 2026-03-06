@@ -36,3 +36,26 @@ The script captures the high-fidelity address from your `#flightanchor` (e.g., *
 The script automatically identifies the closest **United Club** based on your gate:
 * **ORD:** Logic for B6, B18, or C10.
 * **DEN:** Logic for
+
+---
+
+## 🔁 Git + Apps Script Automation
+
+This repository enforces sync and documentation checks through git hooks:
+
+1. `post-commit` automatically runs `clasp push` after each commit.
+2. `pre-push` blocks `git push` if `clasp push` fails.
+3. `pre-commit` blocks commits when key files change without `README.md` staged.
+
+Key files checked by `pre-commit`:
+
+- `Code.gs`
+- `appsscript.json`
+- `.clasp.json`
+- `.githooks/*`
+
+If you intentionally need to bypass hook checks for one commit, use:
+
+```bash
+git commit --no-verify
+```

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Reminder-only check: suggest README updates when behavior/config changed.
+# Enforced check: require README updates when behavior/config changed.
 CHANGED="$(git diff --cached --name-only)"
 
 if [ -z "$CHANGED" ]; then
@@ -14,8 +14,10 @@ echo "$CHANGED" | grep -Eq '^README\.md$'
 TOUCHED_README=$?
 
 if [ "$TOUCHED_KEY_FILES" -eq 0 ] && [ "$TOUCHED_README" -ne 0 ]; then
-  echo "pre-commit reminder: Code/config changed but README.md is not staged."
-  echo "If behavior, setup, or workflow changed, consider updating README.md."
+  echo "pre-commit: README.md is required when code/config/workflow files change."
+  echo "Stage README.md and commit again."
+  echo "To bypass once: git commit --no-verify"
+  exit 1
 fi
 
 exit 0
