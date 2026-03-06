@@ -45,7 +45,7 @@ The script syncs `#flightmanaged` events using the following timeline:
 - Data validation: checks anchor event fields before processing
 - Retry logic: retries Calendar/Tasks API calls with exponential backoff
 - Config object: all timing, cleanup, and feature toggles are configurable
-- API quota monitoring: alerts when Calendar/Tasks API usage nears quota limits
+- API quota monitoring: alerts when Calendar/Tasks API usage nears quota limits, advanced tracking documented
 - Automated README changelog
 - Git hooks: post-commit, pre-push, pre-commit, run-big-checks, update-readme-autolog
 

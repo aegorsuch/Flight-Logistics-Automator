@@ -110,9 +110,11 @@ function runFlightLogistics_(options) {
         var cleanTitle = originalTitle
           .replace(/#flightanchor/gi, "")
           .replace(/^\s*Board\s+/i, "")
-          .replace(/\s+at\s+gate\s+[A-Z0-9-]+/i, "")
+      QUOTA_ALERT_THRESHOLD: 0.9, // Alert when 90% of quota is used
+      ALLOWED_USERS: [Session.getActiveUser().getEmail()] // Restrict script access
           .trim();
 
+    // Security review: restrict script access
         var startTime = flight.getStartTime();
         var endTime = flight.getEndTime();
         var fullAddress = flight.getLocation() || "";
@@ -122,14 +124,17 @@ function runFlightLogistics_(options) {
         var walkGateTitle = parsedGate ? ("Walk to Gate " + parsedGate) : "Walk to Gate";
         var clubTitle = parsedGate ? ("United Club near Gate " + parsedGate) : "United Club";
         var walkClubTitle = parsedGate ? ("Walk to United Club near Gate " + parsedGate) : "Walk to United Club";
+      checkUserAccess_();
 
         var timeline = [
           { key: "fm-board", mins: 45, dur: 45, name: boardTitle },
           { key: "fm-walk-gate", mins: 60, dur: 15, name: walkGateTitle },
+      checkUserAccess_();
           { key: "fm-club", mins: 90, dur: 30, name: clubTitle },
           { key: "fm-walk-club", mins: 105, dur: 15, name: walkClubTitle },
           { key: "fm-security", mins: 120, dur: 15, name: "Security at " + airportCode }
         ];
+      checkUserAccess_();
 
         var syncStart = new Date(startTime.getTime() - (6 * 60 * 60000));
         var syncEnd = new Date(endTime.getTime() + (2 * 60 * 60000));
