@@ -47,6 +47,12 @@ This repository enforces sync and documentation checks through git hooks:
 2. `pre-push` blocks `git push` if `clasp push` fails.
 3. `pre-commit` blocks commits when key files change without `README.md` staged.
 
+Enable hooks in a local clone with:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 Key files checked by `pre-commit`:
 
 - `Code.gs`
