@@ -39,8 +39,17 @@ Task titles include a flight-specific anchor token so reruns do not create dupli
 ### 🧷 Anchor-Scoped Sync
 Each managed event and task includes a stable anchor tag (`#anchor:<id>`) tied to the source flight event. This keeps updates isolated to the correct flight and avoids cross-matching nearby trips.
 
+### 🧹 Orphan Cleanup
+Managed events tagged with `#anchor:<id>` are automatically deleted when their source `#flightanchor` no longer exists in the active sync window. This cleanup is conservative and only runs for recent/pending events.
+
 ### 🧭 Airport Code Parsing
 Airport code parsing now supports route formats like `ORD to DEN`, `ORD->DEN`, and fallback token parsing for less structured anchor titles.
+
+Script tuning constants in `Code.gs`:
+
+- `SEARCH_AHEAD_DAYS` (default `14`)
+- `CLEANUP_LOOKBACK_DAYS` (default `2`)
+- `CLEANUP_ORPHAN_MANAGED_EVENTS` (default `true`)
 
 ---
 

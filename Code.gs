@@ -4,6 +4,10 @@
  * Features: Locking, gate parsing, event upserts, and duplicate-safe task creation.
  */
 
+var CLEANUP_ORPHAN_MANAGED_EVENTS = true;
+var SEARCH_AHEAD_DAYS = 14;
+var CLEANUP_LOOKBACK_DAYS = 2;
+
 function FlightLogisticsAutomator() {
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
@@ -14,15 +18,17 @@ function FlightLogisticsAutomator() {
   try {
     var calendar = CalendarApp.getDefaultCalendar();
     var now = new Date();
-    var searchPeriod = new Date(now.getTime() + (14 * 24 * 60 * 60 * 1000));
+    var searchPeriod = new Date(now.getTime() + (SEARCH_AHEAD_DAYS * 24 * 60 * 60 * 1000));
     var flightAnchors = calendar.getEvents(now, searchPeriod, {search: '#flightanchor'});
     var openTaskTitles = getOpenTaskTitleSet_();
+    var liveAnchorTags = {};
 
     flightAnchors.forEach(function(flight) {
       try {
         var originalTitle = flight.getTitle() || "";
         var anchorId = buildAnchorId_(flight);
         var anchorTag = "#anchor:" + anchorId;
+        liveAnchorTags[anchorTag] = true;
         var taskToken = "[A:" + anchorId + "]";
         var parsedGate = parseGateFromTitle_(originalTitle);
         var cleanTitle = originalTitle
@@ -99,8 +105,42 @@ function FlightLogisticsAutomator() {
         Logger.log("Failed to process anchor '" + flight.getTitle() + "': " + flightErr.message);
       }
     });
+
+    if (CLEANUP_ORPHAN_MANAGED_EVENTS) {
+      cleanupOrphanManagedEvents_(calendar, now, searchPeriod, liveAnchorTags);
+    }
   } finally {
     lock.releaseLock();
+  }
+}
+
+function cleanupOrphanManagedEvents_(calendar, now, searchPeriod, liveAnchorTags) {
+  var cleanupStart = new Date(now.getTime() - (CLEANUP_LOOKBACK_DAYS * 24 * 60 * 60 * 1000));
+  var managedEvents = calendar.getEvents(cleanupStart, searchPeriod, {search: "#flightmanaged"});
+  var deletedCount = 0;
+
+  managedEvents.forEach(function(event) {
+    var title = event.getTitle() || "";
+    var tagMatch = /#anchor:([a-z0-9]+)/i.exec(title);
+    if (!tagMatch) {
+      return;
+    }
+
+    var anchorTag = "#anchor:" + tagMatch[1].toLowerCase();
+    if (liveAnchorTags[anchorTag]) {
+      return;
+    }
+
+    try {
+      event.deleteEvent();
+      deletedCount++;
+    } catch (cleanupErr) {
+      Logger.log("Failed to delete orphan managed event: " + cleanupErr.message);
+    }
+  });
+
+  if (deletedCount > 0) {
+    Logger.log("Deleted orphan managed events: " + deletedCount);
   }
 }
 
