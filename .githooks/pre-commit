@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Reminder-only check: suggest README updates when behavior/config changed.
+CHANGED="$(git diff --cached --name-only)"
+
+if [ -z "$CHANGED" ]; then
+  exit 0
+fi
+
+echo "$CHANGED" | grep -Eq '^(Code\.gs|appsscript\.json|\.clasp\.json|\.githooks/.*|README\.md)$'
+TOUCHED_KEY_FILES=$?
+
+echo "$CHANGED" | grep -Eq '^README\.md$'
+TOUCHED_README=$?
+
+if [ "$TOUCHED_KEY_FILES" -eq 0 ] && [ "$TOUCHED_README" -ne 0 ]; then
+  echo "pre-commit reminder: Code/config changed but README.md is not staged."
+  echo "If behavior, setup, or workflow changed, consider updating README.md."
+fi
+
+exit 0

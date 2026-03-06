@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Block git push if Apps Script sync fails.
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -z "$REPO_ROOT" ]; then
+  exit 0
+fi
+
+cd "$REPO_ROOT" || exit 1
+
+if ! command -v clasp >/dev/null 2>&1; then
+  echo "pre-push: clasp is not installed or not on PATH. Aborting push."
+  exit 1
+fi
+
+echo "pre-push: syncing to Google Apps Script via clasp push..."
+if ! clasp push; then
+  echo "pre-push: clasp push failed. Git push aborted."
+  exit 1
+fi
+
+echo "pre-push: Apps Script sync succeeded. Continuing git push."
+exit 0
