@@ -74,43 +74,34 @@ Script tuning constants in `Code.gs`:
 
 ---
 
-## 🔁 Git + Apps Script Automation
+## 🧪 Testing & Coverage
 
-This repository enforces sync and documentation checks through git hooks:
+To run tests and check coverage:
 
-1. `post-commit` automatically runs `clasp push` after each commit.
-2. `post-commit` also runs `.githooks/run-big-checks` in warning mode after every change.
-3. `pre-push` runs `.githooks/run-big-checks` in strict mode and blocks `git push` when checks fail.
-4. `pre-push` blocks `git push` if `clasp push` fails.
-5. `pre-commit` auto-updates and stages `README.md` when key files change.
+1. Install dependencies:
+   ```sh
+   npm install
+   ```
+2. Run tests:
+   ```sh
+   npm test
+   ```
+3. Generate coverage report:
+   ```sh
+   npm run coverage
+   ```
 
-Enable hooks in a local clone with:
+Coverage results will be uploaded to Codecov automatically if you push to GitHub.
 
-```bash
-git config core.hooksPath .githooks
-```
+## ✨ Usage Example
 
-Key files checked by `pre-commit`:
+To extract a gate from a flight title:
 
-- `Code.gs`
-- `appsscript.json`
-- `.clasp.json`
-- `.githooks/*`
+```js
+const { parseGateFromTitle_ } = require('./flightUtils');
 
-When those files are staged, `.githooks/update-readme-autolog` updates the `Auto Changelog`
-section below and stages `README.md` automatically.
-The changelog keeps the 5 most recent entries.
-
-`run-big-checks` currently validates:
-
-- required files are present (`README.md`, `Code.gs`, `appsscript.json`, `.clasp.json`)
-- `Code.js` is not present (to avoid duplicate canonical script files)
-- `clasp status` succeeds
-
-If you intentionally need to bypass hook checks for one commit, use:
-
-```bash
-git commit --no-verify
+const gate = parseGateFromTitle_('ORD to DEN at Gate B12 #flightanchor');
+console.log(gate); // Output: B12
 ```
 
 ## Auto Changelog
