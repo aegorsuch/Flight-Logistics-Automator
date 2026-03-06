@@ -44,8 +44,10 @@ The script automatically identifies the closest **United Club** based on your ga
 This repository enforces sync and documentation checks through git hooks:
 
 1. `post-commit` automatically runs `clasp push` after each commit.
-2. `pre-push` blocks `git push` if `clasp push` fails.
-3. `pre-commit` blocks commits when key files change without `README.md` staged.
+2. `post-commit` also runs `.githooks/run-big-checks` in warning mode after every change.
+3. `pre-push` runs `.githooks/run-big-checks` in strict mode and blocks `git push` when checks fail.
+4. `pre-push` blocks `git push` if `clasp push` fails.
+5. `pre-commit` blocks commits when key files change without `README.md` staged.
 
 Enable hooks in a local clone with:
 
@@ -59,6 +61,12 @@ Key files checked by `pre-commit`:
 - `appsscript.json`
 - `.clasp.json`
 - `.githooks/*`
+
+`run-big-checks` currently validates:
+
+- required files are present (`README.md`, `Code.gs`, `appsscript.json`, `.clasp.json`)
+- `Code.js` is not present (to avoid duplicate canonical script files)
+- `clasp status` succeeds
 
 If you intentionally need to bypass hook checks for one commit, use:
 

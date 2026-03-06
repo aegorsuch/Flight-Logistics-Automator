@@ -1,0 +1,59 @@
+#!/bin/sh
+
+# Shared policy checks for this repository.
+# Usage:
+#   sh .githooks/run-big-checks warn
+#   sh .githooks/run-big-checks strict
+
+MODE="$1"
+if [ -z "$MODE" ]; then
+  MODE="strict"
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -z "$REPO_ROOT" ]; then
+  echo "run-big-checks: not inside a git repository."
+  exit 0
+fi
+
+cd "$REPO_ROOT" || exit 1
+
+FAILURES=0
+
+report_failure() {
+  echo "run-big-checks: $1"
+  FAILURES=$((FAILURES + 1))
+}
+
+echo "run-big-checks: running policy checks ($MODE)..."
+
+[ -f "README.md" ] || report_failure "README.md missing."
+[ -f "Code.gs" ] || report_failure "Code.gs missing."
+[ -f "appsscript.json" ] || report_failure "appsscript.json missing."
+[ -f ".clasp.json" ] || report_failure ".clasp.json missing."
+
+# Prevent drift between Apps Script pull output and canonical source file.
+if [ -f "Code.js" ]; then
+  report_failure "Code.js exists; keep Code.gs as the single canonical file."
+fi
+
+if command -v clasp >/dev/null 2>&1; then
+  if ! clasp status >/dev/null 2>&1; then
+    report_failure "clasp status failed (auth/config issue)."
+  fi
+else
+  report_failure "clasp is not installed or not on PATH."
+fi
+
+if [ "$FAILURES" -gt 0 ]; then
+  if [ "$MODE" = "strict" ]; then
+    echo "run-big-checks: $FAILURES check(s) failed."
+    exit 1
+  fi
+
+  echo "run-big-checks: $FAILURES check(s) failed (warning only)."
+  exit 0
+fi
+
+echo "run-big-checks: all checks passed."
+exit 0

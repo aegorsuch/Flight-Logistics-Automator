@@ -8,6 +8,13 @@ fi
 
 cd "$REPO_ROOT" || exit 1
 
+if [ -f "$REPO_ROOT/.githooks/run-big-checks" ]; then
+  if ! sh "$REPO_ROOT/.githooks/run-big-checks" strict; then
+    echo "pre-push: big checks failed. Git push aborted."
+    exit 1
+  fi
+fi
+
 if ! command -v clasp >/dev/null 2>&1; then
   echo "pre-push: clasp is not installed or not on PATH. Aborting push."
   exit 1

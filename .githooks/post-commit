@@ -13,3 +13,8 @@ if command -v clasp >/dev/null 2>&1; then
 else
   echo "post-commit: clasp is not installed or not on PATH; skipping Apps Script sync."
 fi
+
+# Run broad policy checks after every change (warning mode).
+if [ -f "$REPO_ROOT/.githooks/run-big-checks" ]; then
+  sh "$REPO_ROOT/.githooks/run-big-checks" warn
+fi
