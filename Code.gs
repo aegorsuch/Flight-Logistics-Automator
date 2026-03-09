@@ -37,9 +37,6 @@ function FlightLogisticsAutomator() {
   runFlightLogistics_({dryRun: false, config: FLIGHT_LOGISTICS_CONFIG});
 }
 
-function DryRunFlightLogistics() {
-  runFlightLogistics_({dryRun: true});
-}
 
 function TestFlightLogisticsHarness() {
   var testAnchors = [
@@ -70,7 +67,7 @@ function TestFlightLogisticsHarness() {
 }
 
 function runFlightLogistics_(options) {
-  var dryRun = !!(options && options.dryRun);
+  // ...existing code...
   var config = (options && options.config) ? options.config : FLIGHT_LOGISTICS_CONFIG;
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
@@ -261,11 +258,7 @@ function cleanupOrphanManagedEvents_(calendar, now, searchPeriod, liveAnchorTags
     }
 
     try {
-      if (dryRun) {
-        Logger.log("DRY RUN: would delete orphan managed event: " + title);
-      } else {
-        event.deleteEvent();
-      }
+      event.deleteEvent();
       deletedCount++;
     } catch (cleanupErr) {
       Logger.log("Failed to delete orphan managed event: " + cleanupErr.message);
@@ -391,17 +384,13 @@ function getOpenTaskTitleSet_() {
 }
 
 function ensureTask_(taskTitleSet, title, dueDate, options) {
-  var dryRun = !!(options && options.dryRun);
+  // ...existing code...
   if (taskTitleSet[title]) {
     return;
   }
 
   try {
-    if (dryRun) {
-      Logger.log("DRY RUN: would create task '" + title + "' due " + dueDate.toISOString());
-    } else {
-      Tasks.Tasks.insert({title: title, due: dueDate.toISOString()}, "@default");
-    }
+    Tasks.Tasks.insert({title: title, due: dueDate.toISOString()}, "@default");
     taskTitleSet[title] = true;
   } catch (taskErr) {
     Logger.log("Task sync failed for '" + title + "': " + taskErr.message);

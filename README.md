@@ -12,14 +12,6 @@ This script transforms a single Google Calendar flight entry into a full, minute
 3. **Services:** Enable the **Google Tasks API** in the "Services" tab on the left sidebar.
 4. **Trigger:** Set a "Time-driven" trigger to run the function `FlightLogisticsAutomator` every 30 minutes.
 
-### Dry Run (Safe Validation)
-Use `DryRunFlightLogistics` to simulate a full run without writing any changes.
-
-- No Calendar events are created, updated, or deleted.
-- No Google Tasks are created.
-- Anchor descriptions are not modified.
-- Planned actions are written to Apps Script execution logs.
-
 ---
 
 ## 📅 The Itinerary Logic (Relative to Departure)
@@ -42,7 +34,6 @@ The script syncs `#flightmanaged` events using the following timeline:
 - Per-flight task deduplication
 - Robust airport/gate parsing
 - Orphan cleanup: deletes managed events when anchor is missing
-- Dry-run mode: simulates all actions, logs intended changes
 - Error reporting: sends email and creates special task on sync/cleanup failure
 - Automated test harness: simulates anchor events and validates output
 - Data validation: checks anchor event fields before processing
@@ -54,14 +45,12 @@ The script syncs `#flightmanaged` events using the following timeline:
 
 ## Usage
 
-Run `FlightLogisticsAutomator()` for live sync, or `DryRunFlightLogistics()` for simulation.
-Run `TestFlightLogisticsHarness()` to simulate anchor events and validate processing.
+Run `FlightLogisticsAutomator()` for live sync.
 
 ## Changelog
 
 - v1.0: Initial linkage, sync, automation, enforcement
 - v1.1: Stability hardening, anchor-scoped matching, dedupe, orphan cleanup
-- v1.2: Dry-run mode, README auto-update
 - v1.3: Error reporting, test harness, validation, retry logic, config object
 
 ### 🧭 Airport Code Parsing
