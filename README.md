@@ -99,9 +99,9 @@ This section is updated automatically by git hooks when key files change.
 It keeps the 5 most recent entries.
 
 <!-- AUTO-CHANGELOG-START -->
+- 2026-03-09 19:59 UTC | files: `Code.gs` | hook: pre-commit auto-sync
 - 2026-03-09 19:41 UTC | files: `Code.gs` | hook: pre-commit auto-sync
 - 2026-03-06 19:09 UTC | files: `Code.gs` | hook: pre-commit auto-sync
 - 2026-03-06 19:08 UTC | files: `Code.gs` | hook: pre-commit auto-sync
 - 2026-03-06 17:54 UTC | files: `.githooks/update-readme-autolog` | hook: pre-commit auto-sync
-- 2026-03-06 17:52 UTC: auto README sync for staged key changes (`.githooks/pre-commit,.githooks/update-readme-autolog`).
 <!-- AUTO-CHANGELOG-END -->
