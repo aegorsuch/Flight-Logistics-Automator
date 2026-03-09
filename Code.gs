@@ -26,10 +26,10 @@ function FlightLogisticsAutomator() {
     // Timeline
     var timeline = [
       { mins: 120, dur: 15, name: 'Security at ' + origin + ' #flightmanaged' },
-      { mins: 105, dur: 15, name: 'Walk to United Club near Gate #flightmanaged' },
-      { mins: 90, dur: 30, name: 'United Club near Gate #flightmanaged' },
-      { mins: 60, dur: 15, name: 'Walk to Gate #flightmanaged' },
-      { mins: 45, dur: 45, name: 'Board at Gate #flightmanaged' },
+      { mins: 105, dur: 15, name: 'Walk to United Club near Gate  #flightmanaged' },
+      { mins: 90, dur: 30, name: 'United Club near Gate  #flightmanaged' },
+      { mins: 60, dur: 15, name: 'Walk to Gate  #flightmanaged' },
+      { mins: 45, dur: 45, name: 'Board at Gate  #flightmanaged' },
       { mins: -15, dur: 15, name: 'Deplane from ' + origin + ' to ' + arrival + ' #flightmanaged' }
     ];
 
