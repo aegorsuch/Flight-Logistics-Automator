@@ -32,7 +32,6 @@ The script syncs `#flightmanaged` events using the following timeline:
 
 - Anchor-scoped event/task tagging (#anchor:<id>) for deterministic updates
 - Per-flight task deduplication
-- Robust airport/gate parsing
 - Orphan cleanup: deletes managed events when anchor is missing
 - Error reporting: sends email and creates special task on sync/cleanup failure
 - Automated test harness: simulates anchor events and validates output
