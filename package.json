@@ -4,8 +4,7 @@
   "description": "Node.js test harness for Google Apps Script Flight Logistics Automator",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
-    "coverage": "jest --coverage"
+    "test": "jest"
   },
   "devDependencies": {
     "jest": "^29.0.0"
