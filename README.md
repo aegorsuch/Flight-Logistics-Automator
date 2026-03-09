@@ -99,9 +99,9 @@ This section is updated automatically by git hooks when key files change.
 It keeps the 5 most recent entries.
 
 <!-- AUTO-CHANGELOG-START -->
+- 2026-03-09 20:12 UTC | files: `.clasp.json,appsscript.json` | hook: pre-commit auto-sync
 - 2026-03-09 20:00 UTC | files: `Code.gs` | hook: pre-commit auto-sync
 - 2026-03-09 19:59 UTC | files: `Code.gs` | hook: pre-commit auto-sync
 - 2026-03-09 19:41 UTC | files: `Code.gs` | hook: pre-commit auto-sync
 - 2026-03-06 19:09 UTC | files: `Code.gs` | hook: pre-commit auto-sync
-- 2026-03-06 19:08 UTC | files: `Code.gs` | hook: pre-commit auto-sync
 <!-- AUTO-CHANGELOG-END -->

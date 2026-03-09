@@ -1,18 +1,6 @@
 {
-  "timeZone": "America/Chicago",
+  "timeZone": "America/New_York",
   "dependencies": {
-    "enabledAdvancedServices": [
-      {
-        "userSymbol": "Tasks",
-        "version": "v1",
-        "serviceId": "tasks"
-      },
-      {
-        "userSymbol": "Calendar",
-        "version": "v3",
-        "serviceId": "calendar"
-      }
-    ]
   },
   "exceptionLogging": "STACKDRIVER",
   "runtimeVersion": "V8"
