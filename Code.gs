@@ -67,23 +67,22 @@ function TestFlightLogisticsHarness() {
 }
 
 function runFlightLogistics_(options) {
-  // ...existing code...
   var config = (options && options.config) ? options.config : FLIGHT_LOGISTICS_CONFIG;
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) {
-    Logger.log((dryRun ? "DRY RUN" : "LIVE") + ": another run is in progress; exiting this invocation.");
+    Logger.log("LIVE: another run is in progress; exiting this invocation.");
     return;
   }
-      QUOTA_ALERT_THRESHOLD: 0.9 // Alert when 90% of quota is used
+  QUOTA_ALERT_THRESHOLD: 0.9; // Alert when 90% of quota is used
 
   try {
-    Logger.log((dryRun ? "DRY RUN" : "LIVE") + ": starting FlightLogisticsAutomator run.");
-      monitorApiQuota_(FLIGHT_LOGISTICS_CONFIG);
+    Logger.log("LIVE: starting FlightLogisticsAutomator run.");
+    monitorApiQuota_(FLIGHT_LOGISTICS_CONFIG);
     var now = new Date();
     var searchPeriod = new Date(now.getTime() + (SEARCH_AHEAD_DAYS * 24 * 60 * 60 * 1000));
     var flightAnchors = calendar.getEvents(now, searchPeriod, {search: '#flightanchor'});
     var openTaskTitles = getOpenTaskTitleSet_();
-      monitorApiQuota_(FLIGHT_LOGISTICS_CONFIG);
+    monitorApiQuota_(FLIGHT_LOGISTICS_CONFIG);
 
     flightAnchors.forEach(function(flight) {
       try {
