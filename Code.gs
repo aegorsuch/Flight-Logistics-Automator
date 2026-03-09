@@ -161,19 +161,18 @@ function runFlightLogistics_(options) {
           var matched = findManagedMatches_(managedEvents, item.key, anchorTag, desiredStart);
           var eventToKeep = matched.length ? matched[0] : null;
 
-          // For Deplane, inherit location from previous event if possible
+          // For Deplane, use arrival airport's location if possible
           var eventLocation = fullAddress;
-          if (item.key === "fm-deplane" && timeline.length > 1) {
-            // Find the previous timeline event (before Deplane)
-            var prevIdx = timeline.findIndex(function(t) { return t.key === "fm-deplane"; }) - 1;
-            if (prevIdx >= 0) {
-              // Try to find the event created for the previous timeline item
-              var prevItem = timeline[prevIdx];
-              var prevStart = new Date(startTime.getTime() - (prevItem.mins * 60000));
-              var prevMatch = findManagedMatches_(managedEvents, prevItem.key, anchorTag, prevStart);
-              if (prevMatch.length && prevMatch[0].getLocation()) {
-                eventLocation = prevMatch[0].getLocation();
-              }
+          if (item.key === "fm-deplane") {
+            // Try to get the location of the arrival airport from the anchor event's title
+            var arrivalCode = parseArrivalAirportCodeFromTitle_(originalTitle);
+            // Search for a managed event at the arrival airport within the sync window
+            var arrivalEvent = managedEvents.find(function(ev) {
+              var loc = (ev.getLocation() || "").toUpperCase();
+              return loc.includes(arrivalCode);
+            });
+            if (arrivalEvent && arrivalEvent.getLocation()) {
+              eventLocation = arrivalEvent.getLocation();
             }
           }
 
