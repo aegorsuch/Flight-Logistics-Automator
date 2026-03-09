@@ -1,3 +1,21 @@
+// Extracts the arrival airport code from a flight title string.
+// E.g., "ORD to DEN" => "DEN"
+function parseArrivalAirportCodeFromTitle_(title) {
+  var normalized = (title || "")
+    .replace(/#flightanchor/gi, "")
+    .replace(/^\s*Board\s+/i, "")
+    .toUpperCase();
+
+  // Priority 1: route format like "ORD to DEN" or "ORD->DEN".
+  var routeMatch = /\b([A-Z]{3})\s*(?:TO|->|-)\s*([A-Z]{3})\b/.exec(normalized);
+  if (routeMatch) {
+    return routeMatch[2];
+  }
+
+  // Priority 2: if only one code, return it (fallback)
+  var codeMatch = /([A-Z]{3})\b/.exec(normalized);
+  return codeMatch ? codeMatch[1] : "";
+}
 /**
  * Flight Logistics Generator (Final Gapless Version)
  * Logic: Idempotent sync of timeline and tasks for #flightanchor events.
@@ -127,7 +145,9 @@ function runFlightLogistics_(options) {
           { key: "fm-walk-gate", mins: 60, dur: 15, name: walkGateTitle },
           { key: "fm-club", mins: 90, dur: 30, name: clubTitle },
           { key: "fm-walk-club", mins: 105, dur: 15, name: walkClubTitle },
-          { key: "fm-security", mins: 120, dur: 15, name: "Security at " + airportCode }
+          { key: "fm-security", mins: 120, dur: 15, name: "Security at " + airportCode },
+          // Add Deplane event 15 minutes after flight end
+          { key: "fm-deplane", mins: -15, dur: 15, name: "Deplane from " + airportCode + " to " + parseArrivalAirportCodeFromTitle_(originalTitle) }
         ];
 
         var syncStart = new Date(startTime.getTime() - (6 * 60 * 60000));
@@ -140,6 +160,22 @@ function runFlightLogistics_(options) {
           var desiredTitle = item.name + " #flightmanaged #" + item.key + " " + anchorTag;
           var matched = findManagedMatches_(managedEvents, item.key, anchorTag, desiredStart);
           var eventToKeep = matched.length ? matched[0] : null;
+
+          // For Deplane, inherit location from previous event if possible
+          var eventLocation = fullAddress;
+          if (item.key === "fm-deplane" && timeline.length > 1) {
+            // Find the previous timeline event (before Deplane)
+            var prevIdx = timeline.findIndex(function(t) { return t.key === "fm-deplane"; }) - 1;
+            if (prevIdx >= 0) {
+              // Try to find the event created for the previous timeline item
+              var prevItem = timeline[prevIdx];
+              var prevStart = new Date(startTime.getTime() - (prevItem.mins * 60000));
+              var prevMatch = findManagedMatches_(managedEvents, prevItem.key, anchorTag, prevStart);
+              if (prevMatch.length && prevMatch[0].getLocation()) {
+                eventLocation = prevMatch[0].getLocation();
+              }
+            }
+          }
 
           // Remove duplicates from prior runs so each step has one managed event.
           if (matched.length > 1) {
@@ -162,8 +198,8 @@ function runFlightLogistics_(options) {
             } else {
               eventToKeep.setTitle(desiredTitle);
               eventToKeep.setTime(desiredStart, desiredEnd);
-              if (fullAddress && eventToKeep.getLocation() !== fullAddress) {
-                eventToKeep.setLocation(fullAddress);
+              if (eventLocation && eventToKeep.getLocation() !== eventLocation) {
+                eventToKeep.setLocation(eventLocation);
               }
             }
           } else {
@@ -171,8 +207,8 @@ function runFlightLogistics_(options) {
               Logger.log("DRY RUN: would create managed event '" + desiredTitle + "' at " + desiredStart.toISOString());
             } else {
               var created = calendar.createEvent(desiredTitle, desiredStart, desiredEnd);
-              if (fullAddress) {
-                created.setLocation(fullAddress);
+              if (eventLocation) {
+                created.setLocation(eventLocation);
               }
             }
           }

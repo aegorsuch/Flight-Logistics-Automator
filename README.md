@@ -32,6 +32,7 @@ The script syncs `#flightmanaged` events using the following timeline:
 | **-90 mins** | 30 mins | **United Club / near Gate [ID]** | Full Street Address |
 | **-60 mins** | 15 mins | **Walk to Gate [ID]** | Full Street Address |
 | **-45 mins** | 45 mins | **Board [Flight Title] (at Gate [ID] when available)** | Full Street Address |
+| **+15 mins after end** | 15 mins | **Deplane from [Origin] to [Arrival]** | Inherits location from previous event |
 
 ---
 
