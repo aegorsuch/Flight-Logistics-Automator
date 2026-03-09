@@ -5,9 +5,7 @@ function parseGateFromTitleNode(title) {
 	return match ? match[1].toUpperCase() : "";
 }
 
-module.exports = {
-	parseGateFromTitleNode,
-};
+// ...existing code...
 // Pure utility functions for Node.js testing
 
 
